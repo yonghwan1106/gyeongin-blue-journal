@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { MessageCircle, Send, ThumbsUp, Reply, Trash2 } from 'lucide-react'
 import { format } from 'date-fns'
 import { ko } from 'date-fns/locale'
-import pb from '@/lib/pocketbase'
+import { getPb } from '@/lib/pocketbase'
 import { useAuthStore } from '@/store/authStore'
 import type { Comment } from '@/types'
 
@@ -27,7 +27,7 @@ export default function CommentSection({ articleId }: CommentSectionProps) {
   const fetchComments = async () => {
     try {
       setLoading(true)
-      const records = await pb.collection('comments').getList<Comment>(1, 100, {
+      const records = await getPb().collection('comments').getList<Comment>(1, 100, {
         filter: `article = "${articleId}"`,
         sort: '-created',
         expand: 'user,parent',
@@ -51,7 +51,7 @@ export default function CommentSection({ articleId }: CommentSectionProps) {
     if (!content.trim()) return
 
     try {
-      await pb.collection('comments').create({
+      await getPb().collection('comments').create({
         article: articleId,
         user: user.id,
         content: content.trim(),
@@ -80,7 +80,7 @@ export default function CommentSection({ articleId }: CommentSectionProps) {
     }
 
     try {
-      await pb.collection('comments').update(commentId, {
+      await getPb().collection('comments').update(commentId, {
         likes: currentLikes + 1,
       })
       fetchComments()
@@ -93,7 +93,7 @@ export default function CommentSection({ articleId }: CommentSectionProps) {
     if (!confirm('댓글을 삭제하시겠습니까?')) return
 
     try {
-      await pb.collection('comments').delete(commentId)
+      await getPb().collection('comments').delete(commentId)
       fetchComments()
     } catch (error) {
       console.error('Failed to delete comment:', error)

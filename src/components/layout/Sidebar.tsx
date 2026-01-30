@@ -4,7 +4,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { TrendingUp, Eye } from 'lucide-react'
 import { useEffect, useState } from 'react'
-import pb from '@/lib/pocketbase'
+import { getPb, getFileUrl } from '@/lib/pocketbase'
 import type { Article, Advertisement } from '@/types'
 
 export default function Sidebar() {
@@ -18,7 +18,7 @@ export default function Sidebar() {
 
   const fetchPopularArticles = async () => {
     try {
-      const records = await pb.collection('articles').getList<Article>(1, 10, {
+      const records = await getPb().collection('articles').getList<Article>(1, 10, {
         filter: 'status = "published"',
         sort: '-views',
         expand: 'category',
@@ -32,7 +32,7 @@ export default function Sidebar() {
   const fetchAds = async () => {
     try {
       const now = new Date().toISOString()
-      const records = await pb.collection('advertisements').getList<Advertisement>(1, 5, {
+      const records = await getPb().collection('advertisements').getList<Advertisement>(1, 5, {
         filter: `position = "sidebar" && is_active = true && start_date <= "${now}" && end_date >= "${now}"`,
       })
       setAds(records.items)
@@ -42,13 +42,11 @@ export default function Sidebar() {
   }
 
   const getArticleImageUrl = (article: Article) => {
-    if (!article.thumbnail) return '/placeholder.jpg'
-    return `${pb.baseUrl}/api/files/articles/${article.id}/${article.thumbnail}`
+    return getFileUrl('articles', article.id, article.thumbnail)
   }
 
   const getAdImageUrl = (ad: Advertisement) => {
-    if (!ad.image) return '/placeholder.jpg'
-    return `${pb.baseUrl}/api/files/advertisements/${ad.id}/${ad.image}`
+    return getFileUrl('advertisements', ad.id, ad.image)
   }
 
   return (
@@ -102,7 +100,7 @@ export default function Sidebar() {
           className="block rounded-xl overflow-hidden shadow-sm border border-border hover:shadow-md transition-shadow"
           onClick={async () => {
             try {
-              await pb.collection('advertisements').update(ad.id, {
+              await getPb().collection('advertisements').update(ad.id, {
                 clicks: ad.clicks + 1
               })
             } catch (error) {

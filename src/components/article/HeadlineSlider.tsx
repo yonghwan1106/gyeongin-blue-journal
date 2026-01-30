@@ -6,7 +6,7 @@ import Image from 'next/image'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { format } from 'date-fns'
 import { ko } from 'date-fns/locale'
-import pb from '@/lib/pocketbase'
+import { getPb, getFileUrl } from '@/lib/pocketbase'
 import type { Article } from '@/types'
 
 export default function HeadlineSlider() {
@@ -19,7 +19,7 @@ export default function HeadlineSlider() {
 
   const fetchHeadlines = async () => {
     try {
-      const records = await pb.collection('articles').getList<Article>(1, 5, {
+      const records = await getPb().collection('articles').getList<Article>(1, 5, {
         filter: 'status = "published" && is_headline = true',
         sort: '-published_at',
         expand: 'category,author',
@@ -45,8 +45,7 @@ export default function HeadlineSlider() {
   }, [headlines.length, nextSlide])
 
   const getImageUrl = (article: Article) => {
-    if (!article.thumbnail) return '/placeholder.jpg'
-    return `${pb.baseUrl}/api/files/articles/${article.id}/${article.thumbnail}`
+    return getFileUrl('articles', article.id, article.thumbnail)
   }
 
   if (headlines.length === 0) {

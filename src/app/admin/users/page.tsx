@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { Search, Shield, User as UserIcon } from 'lucide-react'
 import { format } from 'date-fns'
 import { ko } from 'date-fns/locale'
-import pb from '@/lib/pocketbase'
+import { getPb } from '@/lib/pocketbase'
 import Pagination from '@/components/common/Pagination'
 import type { User } from '@/types'
 
@@ -35,7 +35,7 @@ export default function UsersPage() {
         filter = filter ? `${filter} && ${searchFilter}` : searchFilter
       }
 
-      const records = await pb.collection('users').getList<User>(currentPage, perPage, {
+      const records = await getPb().collection('users').getList<User>(currentPage, perPage, {
         filter: filter || undefined,
         sort: '-created',
       })
@@ -59,7 +59,7 @@ export default function UsersPage() {
     if (!confirm(`이 사용자의 권한을 "${newRole}"로 변경하시겠습니까?`)) return
 
     try {
-      await pb.collection('users').update(userId, { role: newRole })
+      await getPb().collection('users').update(userId, { role: newRole })
       fetchUsers()
     } catch (error) {
       console.error('Failed to update user role:', error)

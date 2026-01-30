@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { AlertCircle } from 'lucide-react'
-import pb from '@/lib/pocketbase'
+import { getPb } from '@/lib/pocketbase'
 import type { Article } from '@/types'
 
 export default function BreakingNews() {
@@ -15,7 +15,7 @@ export default function BreakingNews() {
 
   const fetchBreakingNews = async () => {
     try {
-      const records = await pb.collection('articles').getList<Article>(1, 5, {
+      const records = await getPb().collection('articles').getList<Article>(1, 5, {
         filter: 'status = "published" && is_breaking = true',
         sort: '-published_at',
       })

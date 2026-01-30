@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { Plus, Edit, Trash2, GripVertical } from 'lucide-react'
-import pb from '@/lib/pocketbase'
+import { getPb } from '@/lib/pocketbase'
 import type { Category } from '@/types'
 
 export default function CategoriesPage() {
@@ -24,7 +24,7 @@ export default function CategoriesPage() {
   const fetchCategories = async () => {
     try {
       setLoading(true)
-      const records = await pb.collection('categories').getFullList<Category>({
+      const records = await getPb().collection('categories').getFullList<Category>({
         sort: 'order',
       })
       setCategories(records)
@@ -95,9 +95,9 @@ export default function CategoriesPage() {
 
     try {
       if (editingCategory) {
-        await pb.collection('categories').update(editingCategory.id, formData)
+        await getPb().collection('categories').update(editingCategory.id, formData)
       } else {
-        await pb.collection('categories').create(formData)
+        await getPb().collection('categories').create(formData)
       }
       closeModal()
       fetchCategories()
@@ -111,7 +111,7 @@ export default function CategoriesPage() {
     if (!confirm('이 카테고리를 삭제하시겠습니까?')) return
 
     try {
-      await pb.collection('categories').delete(id)
+      await getPb().collection('categories').delete(id)
       fetchCategories()
     } catch (error) {
       console.error('Failed to delete category:', error)

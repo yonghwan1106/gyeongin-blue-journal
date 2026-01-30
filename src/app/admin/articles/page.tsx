@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { Plus, Search, Edit, Trash2, Eye, MoreHorizontal } from 'lucide-react'
 import { format } from 'date-fns'
 import { ko } from 'date-fns/locale'
-import pb from '@/lib/pocketbase'
+import { getPb } from '@/lib/pocketbase'
 import Pagination from '@/components/common/Pagination'
 import type { Article, Category } from '@/types'
 
@@ -30,7 +30,7 @@ export default function ArticlesPage() {
 
   const fetchCategories = async () => {
     try {
-      const records = await pb.collection('categories').getFullList<Category>({
+      const records = await getPb().collection('categories').getFullList<Category>({
         sort: 'order',
       })
       setCategories(records)
@@ -57,7 +57,7 @@ export default function ArticlesPage() {
         filter += filter ? ` && ${searchFilter}` : searchFilter
       }
 
-      const records = await pb.collection('articles').getList<Article>(currentPage, perPage, {
+      const records = await getPb().collection('articles').getList<Article>(currentPage, perPage, {
         filter: filter || undefined,
         sort: '-created',
         expand: 'category,author',
@@ -82,7 +82,7 @@ export default function ArticlesPage() {
     if (!confirm('이 기사를 삭제하시겠습니까?')) return
 
     try {
-      await pb.collection('articles').delete(id)
+      await getPb().collection('articles').delete(id)
       fetchArticles()
     } catch (error) {
       console.error('Failed to delete article:', error)

@@ -3,7 +3,7 @@
 import { useEffect, useState, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { Search } from 'lucide-react'
-import pb from '@/lib/pocketbase'
+import { getPb } from '@/lib/pocketbase'
 import ArticleCard from '@/components/article/ArticleCard'
 import Pagination from '@/components/common/Pagination'
 import Sidebar from '@/components/layout/Sidebar'
@@ -40,7 +40,7 @@ function SearchContent() {
   const fetchArticles = async () => {
     try {
       setLoading(true)
-      const records = await pb.collection('articles').getList<Article>(currentPage, perPage, {
+      const records = await getPb().collection('articles').getList<Article>(currentPage, perPage, {
         filter: `status = "published" && (title ~ "${query}" || summary ~ "${query}" || content ~ "${query}")`,
         sort: '-published_at',
         expand: 'category,author',

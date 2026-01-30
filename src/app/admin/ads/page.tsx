@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { Plus, Edit, Trash2, Eye, EyeOff, ExternalLink } from 'lucide-react'
 import { format } from 'date-fns'
 import { ko } from 'date-fns/locale'
-import pb from '@/lib/pocketbase'
+import { getPb, getFileUrl } from '@/lib/pocketbase'
 import type { Advertisement } from '@/types'
 
 export default function AdsPage() {
@@ -31,7 +31,7 @@ export default function AdsPage() {
   const fetchAds = async () => {
     try {
       setLoading(true)
-      const records = await pb.collection('advertisements').getFullList<Advertisement>({
+      const records = await getPb().collection('advertisements').getFullList<Advertisement>({
         sort: '-created',
       })
       setAds(records)
@@ -54,7 +54,7 @@ export default function AdsPage() {
         is_active: ad.is_active,
       })
       if (ad.image) {
-        setImagePreview(`${pb.baseUrl}/api/files/advertisements/${ad.id}/${ad.image}`)
+        setImagePreview(getFileUrl('advertisements', ad.id, ad.image))
       }
     } else {
       setEditingAd(null)
@@ -117,9 +117,9 @@ export default function AdsPage() {
       }
 
       if (editingAd) {
-        await pb.collection('advertisements').update(editingAd.id, data)
+        await getPb().collection('advertisements').update(editingAd.id, data)
       } else {
-        await pb.collection('advertisements').create(data)
+        await getPb().collection('advertisements').create(data)
       }
 
       closeModal()
@@ -132,7 +132,7 @@ export default function AdsPage() {
 
   const handleToggleActive = async (ad: Advertisement) => {
     try {
-      await pb.collection('advertisements').update(ad.id, {
+      await getPb().collection('advertisements').update(ad.id, {
         is_active: !ad.is_active,
       })
       fetchAds()
@@ -145,7 +145,7 @@ export default function AdsPage() {
     if (!confirm('이 광고를 삭제하시겠습니까?')) return
 
     try {
-      await pb.collection('advertisements').delete(id)
+      await getPb().collection('advertisements').delete(id)
       fetchAds()
     } catch (error) {
       console.error('Failed to delete ad:', error)
@@ -196,7 +196,7 @@ export default function AdsPage() {
               <div className="relative aspect-[4/3] bg-slate-100">
                 {ad.image ? (
                   <img
-                    src={`${pb.baseUrl}/api/files/advertisements/${ad.id}/${ad.image}`}
+                    src={getFileUrl('advertisements', ad.id, ad.image)}
                     alt={ad.title}
                     className="w-full h-full object-cover"
                   />

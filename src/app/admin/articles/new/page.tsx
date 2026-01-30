@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { ArrowLeft, Save, Eye, Image as ImageIcon, X } from 'lucide-react'
 import Link from 'next/link'
-import pb from '@/lib/pocketbase'
+import { getPb } from '@/lib/pocketbase'
 import { useAuthStore } from '@/store/authStore'
 import type { Category, Author } from '@/types'
 
@@ -37,8 +37,8 @@ export default function NewArticlePage() {
   const fetchData = async () => {
     try {
       const [cats, auths] = await Promise.all([
-        pb.collection('categories').getFullList<Category>({ sort: 'order' }),
-        pb.collection('authors').getFullList<Author>({ sort: 'name' }),
+        getPb().collection('categories').getFullList<Category>({ sort: 'order' }),
+        getPb().collection('authors').getFullList<Author>({ sort: 'name' }),
       ])
       setCategories(cats)
       setAuthors(auths)
@@ -124,7 +124,7 @@ export default function NewArticlePage() {
         data.append('published_at', new Date().toISOString())
       }
 
-      const record = await pb.collection('articles').create(data)
+      const record = await getPb().collection('articles').create(data)
       router.push(`/admin/articles/${record.id}/edit`)
     } catch (error) {
       console.error('Failed to create article:', error)

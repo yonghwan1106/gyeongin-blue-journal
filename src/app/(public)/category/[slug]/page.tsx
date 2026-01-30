@@ -2,7 +2,7 @@
 
 import { useEffect, useState, use } from 'react'
 import { notFound } from 'next/navigation'
-import pb from '@/lib/pocketbase'
+import { getPb } from '@/lib/pocketbase'
 import ArticleCard from '@/components/article/ArticleCard'
 import Pagination from '@/components/common/Pagination'
 import Sidebar from '@/components/layout/Sidebar'
@@ -33,7 +33,7 @@ export default function CategoryPage({ params }: PageProps) {
 
   const fetchCategory = async () => {
     try {
-      const records = await pb.collection('categories').getList<Category>(1, 1, {
+      const records = await getPb().collection('categories').getList<Category>(1, 1, {
         filter: `slug = "${slug}"`,
       })
       if (records.items.length === 0) {
@@ -52,7 +52,7 @@ export default function CategoryPage({ params }: PageProps) {
 
     try {
       setLoading(true)
-      const records = await pb.collection('articles').getList<Article>(currentPage, perPage, {
+      const records = await getPb().collection('articles').getList<Article>(currentPage, perPage, {
         filter: `status = "published" && category = "${category.id}"`,
         sort: '-published_at',
         expand: 'category,author',

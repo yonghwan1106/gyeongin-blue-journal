@@ -3,7 +3,7 @@ import Image from 'next/image'
 import { Clock, Eye } from 'lucide-react'
 import { format } from 'date-fns'
 import { ko } from 'date-fns/locale'
-import pb from '@/lib/pocketbase'
+import { getFileUrl } from '@/lib/pocketbase'
 import type { Article } from '@/types'
 
 interface ArticleCardProps {
@@ -13,8 +13,7 @@ interface ArticleCardProps {
 
 export default function ArticleCard({ article, variant = 'default' }: ArticleCardProps) {
   const getImageUrl = () => {
-    if (!article.thumbnail) return '/placeholder.jpg'
-    return `${pb.baseUrl}/api/files/articles/${article.id}/${article.thumbnail}`
+    return getFileUrl('articles', article.id, article.thumbnail)
   }
 
   const categoryName = article.expand?.category?.name || '일반'

@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
-import pb from '@/lib/pocketbase'
+import { getPb } from '@/lib/pocketbase'
 import type { User } from '@/types'
 
 interface AuthState {
@@ -24,7 +24,7 @@ export const useAuthStore = create<AuthState>()(
 
       login: async (email: string, password: string) => {
         try {
-          const authData = await pb.collection('users').authWithPassword(email, password)
+          const authData = await getPb().collection('users').authWithPassword(email, password)
           set({
             user: authData.record as unknown as User,
             token: authData.token,
@@ -37,7 +37,7 @@ export const useAuthStore = create<AuthState>()(
 
       register: async (email: string, password: string, name: string) => {
         try {
-          await pb.collection('users').create({
+          await getPb().collection('users').create({
             email,
             password,
             passwordConfirm: password,
@@ -45,7 +45,7 @@ export const useAuthStore = create<AuthState>()(
             role: 'reader',
           })
           // Auto login after registration
-          const authData = await pb.collection('users').authWithPassword(email, password)
+          const authData = await getPb().collection('users').authWithPassword(email, password)
           set({
             user: authData.record as unknown as User,
             token: authData.token,

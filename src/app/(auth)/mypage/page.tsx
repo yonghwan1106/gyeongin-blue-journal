@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { User, Bookmark, Settings, LogOut } from 'lucide-react'
 import { useAuthStore } from '@/store/authStore'
-import pb from '@/lib/pocketbase'
+import { getPb } from '@/lib/pocketbase'
 import ArticleCard from '@/components/article/ArticleCard'
 import type { Article, Bookmark as BookmarkType } from '@/types'
 
@@ -37,14 +37,14 @@ export default function MyPage() {
 
     try {
       setLoading(true)
-      const bookmarks = await pb.collection('bookmarks').getList<BookmarkType>(1, 50, {
+      const bookmarks = await getPb().collection('bookmarks').getList<BookmarkType>(1, 50, {
         filter: `user = "${user.id}"`,
         sort: '-created',
       })
 
       if (bookmarks.items.length > 0) {
         const articleIds = bookmarks.items.map(b => b.article)
-        const articles = await pb.collection('articles').getList<Article>(1, 50, {
+        const articles = await getPb().collection('articles').getList<Article>(1, 50, {
           filter: articleIds.map(id => `id = "${id}"`).join(' || '),
           expand: 'category,author',
         })

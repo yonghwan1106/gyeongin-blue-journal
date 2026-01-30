@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { FileText, Users, Eye, TrendingUp, Plus, BarChart3 } from 'lucide-react'
-import pb from '@/lib/pocketbase'
+import { getPb } from '@/lib/pocketbase'
 import type { Article } from '@/types'
 
 interface Stats {
@@ -34,13 +34,13 @@ export default function AdminDashboard() {
 
       // Fetch stats
       const [articles, publishedArticles, users] = await Promise.all([
-        pb.collection('articles').getList(1, 1),
-        pb.collection('articles').getList(1, 1, { filter: 'status = "published"' }),
-        pb.collection('users').getList(1, 1),
+        getPb().collection('articles').getList(1, 1),
+        getPb().collection('articles').getList(1, 1, { filter: 'status = "published"' }),
+        getPb().collection('users').getList(1, 1),
       ])
 
       // Calculate total views
-      const allArticles = await pb.collection('articles').getFullList<Article>({
+      const allArticles = await getPb().collection('articles').getFullList<Article>({
         fields: 'views',
       })
       const totalViews = allArticles.reduce((sum, a) => sum + (a.views || 0), 0)
@@ -53,14 +53,14 @@ export default function AdminDashboard() {
       })
 
       // Fetch recent articles
-      const recent = await pb.collection('articles').getList<Article>(1, 5, {
+      const recent = await getPb().collection('articles').getList<Article>(1, 5, {
         sort: '-created',
         expand: 'category,author',
       })
       setRecentArticles(recent.items)
 
       // Fetch popular articles
-      const popular = await pb.collection('articles').getList<Article>(1, 5, {
+      const popular = await getPb().collection('articles').getList<Article>(1, 5, {
         filter: 'status = "published"',
         sort: '-views',
         expand: 'category',

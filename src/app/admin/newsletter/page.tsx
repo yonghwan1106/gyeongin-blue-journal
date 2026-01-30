@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { Mail, Users, UserCheck, UserX, Search, Trash2 } from 'lucide-react'
 import { format } from 'date-fns'
 import { ko } from 'date-fns/locale'
-import pb from '@/lib/pocketbase'
+import { getPb } from '@/lib/pocketbase'
 import Pagination from '@/components/common/Pagination'
 import type { NewsletterSubscriber } from '@/types'
 
@@ -27,8 +27,8 @@ export default function NewsletterPage() {
   const fetchStats = async () => {
     try {
       const [all, active] = await Promise.all([
-        pb.collection('newsletter_subscribers').getList(1, 1),
-        pb.collection('newsletter_subscribers').getList(1, 1, { filter: 'is_active = true' }),
+        getPb().collection('newsletter_subscribers').getList(1, 1),
+        getPb().collection('newsletter_subscribers').getList(1, 1, { filter: 'is_active = true' }),
       ])
       setTotalItems(all.totalItems)
       setActiveCount(active.totalItems)
@@ -53,7 +53,7 @@ export default function NewsletterPage() {
         filter = filter ? `${filter} && ${searchFilter}` : searchFilter
       }
 
-      const records = await pb.collection('newsletter_subscribers').getList<NewsletterSubscriber>(
+      const records = await getPb().collection('newsletter_subscribers').getList<NewsletterSubscriber>(
         currentPage,
         perPage,
         {
@@ -79,7 +79,7 @@ export default function NewsletterPage() {
 
   const handleToggleStatus = async (subscriber: NewsletterSubscriber) => {
     try {
-      await pb.collection('newsletter_subscribers').update(subscriber.id, {
+      await getPb().collection('newsletter_subscribers').update(subscriber.id, {
         is_active: !subscriber.is_active,
       })
       fetchSubscribers()
@@ -93,7 +93,7 @@ export default function NewsletterPage() {
     if (!confirm('이 구독자를 삭제하시겠습니까?')) return
 
     try {
-      await pb.collection('newsletter_subscribers').delete(id)
+      await getPb().collection('newsletter_subscribers').delete(id)
       fetchSubscribers()
       fetchStats()
     } catch (error) {
@@ -104,7 +104,7 @@ export default function NewsletterPage() {
 
   const exportSubscribers = async () => {
     try {
-      const allSubscribers = await pb.collection('newsletter_subscribers').getFullList<NewsletterSubscriber>({
+      const allSubscribers = await getPb().collection('newsletter_subscribers').getFullList<NewsletterSubscriber>({
         filter: 'is_active = true',
         sort: '-created',
       })

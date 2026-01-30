@@ -4,7 +4,7 @@ import { useEffect, useState, use } from 'react'
 import { useRouter } from 'next/navigation'
 import { ArrowLeft, Save, Eye, Image as ImageIcon, X, Trash2 } from 'lucide-react'
 import Link from 'next/link'
-import pb from '@/lib/pocketbase'
+import { getPb, getFileUrl } from '@/lib/pocketbase'
 import type { Article, Category, Author } from '@/types'
 
 interface PageProps {
@@ -43,9 +43,9 @@ export default function EditArticlePage({ params }: PageProps) {
     try {
       setLoading(true)
       const [articleData, cats, auths] = await Promise.all([
-        pb.collection('articles').getOne<Article>(id, { expand: 'category,author' }),
-        pb.collection('categories').getFullList<Category>({ sort: 'order' }),
-        pb.collection('authors').getFullList<Author>({ sort: 'name' }),
+        getPb().collection('articles').getOne<Article>(id, { expand: 'category,author' }),
+        getPb().collection('categories').getFullList<Category>({ sort: 'order' }),
+        getPb().collection('authors').getFullList<Author>({ sort: 'name' }),
       ])
 
       setArticle(articleData)
@@ -66,7 +66,7 @@ export default function EditArticlePage({ params }: PageProps) {
       })
 
       if (articleData.thumbnail) {
-        setThumbnailPreview(`${pb.baseUrl}/api/files/articles/${articleData.id}/${articleData.thumbnail}`)
+        setThumbnailPreview(getFileUrl('articles', articleData.id, articleData.thumbnail))
       }
     } catch (error) {
       console.error('Failed to fetch article:', error)
@@ -130,7 +130,7 @@ export default function EditArticlePage({ params }: PageProps) {
         data.append('published_at', new Date().toISOString())
       }
 
-      await pb.collection('articles').update(id, data)
+      await getPb().collection('articles').update(id, data)
       alert('저장되었습니다.')
       fetchData()
     } catch (error) {
@@ -145,7 +145,7 @@ export default function EditArticlePage({ params }: PageProps) {
     if (!confirm('이 기사를 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.')) return
 
     try {
-      await pb.collection('articles').delete(id)
+      await getPb().collection('articles').delete(id)
       router.push('/admin/articles')
     } catch (error) {
       console.error('Failed to delete article:', error)

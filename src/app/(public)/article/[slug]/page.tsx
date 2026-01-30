@@ -5,7 +5,7 @@ import { notFound } from 'next/navigation'
 import { format } from 'date-fns'
 import { ko } from 'date-fns/locale'
 import { Clock, Eye, Share2, Bookmark, Facebook, Twitter, Link as LinkIcon } from 'lucide-react'
-import pb from '@/lib/pocketbase'
+import { getPb, getFileUrl } from '@/lib/pocketbase'
 import type { Article } from '@/types'
 import CommentSection from '@/components/comment/CommentSection'
 import RelatedArticles from '@/components/article/RelatedArticles'
@@ -17,7 +17,7 @@ interface PageProps {
 
 async function getArticle(slug: string): Promise<Article | null> {
   try {
-    const records = await pb.collection('articles').getList<Article>(1, 1, {
+    const records = await getPb().collection('articles').getList<Article>(1, 1, {
       filter: `slug = "${slug}" && status = "published"`,
       expand: 'category,author',
     })
@@ -25,7 +25,7 @@ async function getArticle(slug: string): Promise<Article | null> {
 
     // Increment view count
     const article = records.items[0]
-    await pb.collection('articles').update(article.id, {
+    await getPb().collection('articles').update(article.id, {
       views: article.views + 1
     }).catch(() => {})
 
@@ -66,12 +66,11 @@ export default async function ArticlePage({ params }: PageProps) {
   }
 
   const getImageUrl = () => {
-    if (!article.thumbnail) return '/placeholder.jpg'
-    return `${pb.baseUrl}/api/files/articles/${article.id}/${article.thumbnail}`
+    return getFileUrl('articles', article.id, article.thumbnail)
   }
 
   const authorAvatarUrl = article.expand?.author?.avatar
-    ? `${pb.baseUrl}/api/files/authors/${article.expand.author.id}/${article.expand.author.avatar}`
+    ? getFileUrl('authors', article.expand.author.id, article.expand.author.avatar)
     : null
 
   return (

@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { useState, useEffect } from 'react'
 import { Search, Menu, X, User, LogOut, Bookmark } from 'lucide-react'
 import { useAuthStore } from '@/store/authStore'
-import pb from '@/lib/pocketbase'
+import { getPb } from '@/lib/pocketbase'
 import type { Category } from '@/types'
 
 export default function Header() {
@@ -21,7 +21,7 @@ export default function Header() {
 
   const fetchCategories = async () => {
     try {
-      const records = await pb.collection('categories').getList<Category>(1, 10, {
+      const records = await getPb().collection('categories').getList<Category>(1, 10, {
         sort: 'order',
       })
       setCategories(records.items)

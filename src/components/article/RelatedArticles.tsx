@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import pb from '@/lib/pocketbase'
+import { getPb } from '@/lib/pocketbase'
 import ArticleCard from './ArticleCard'
 import type { Article } from '@/types'
 
@@ -19,7 +19,7 @@ export default function RelatedArticles({ categoryId, currentArticleId }: Relate
 
   const fetchRelatedArticles = async () => {
     try {
-      const records = await pb.collection('articles').getList<Article>(1, 4, {
+      const records = await getPb().collection('articles').getList<Article>(1, 4, {
         filter: `status = "published" && category = "${categoryId}" && id != "${currentArticleId}"`,
         sort: '-published_at',
         expand: 'category',
