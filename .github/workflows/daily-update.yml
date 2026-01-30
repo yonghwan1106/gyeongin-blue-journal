@@ -1,0 +1,31 @@
+name: Daily Article Update
+
+on:
+  # 매일 한국시간 오전 9시 실행 (UTC 0시)
+  schedule:
+    - cron: '0 0 * * *'
+
+  # 수동 실행 가능
+  workflow_dispatch:
+
+jobs:
+  update-articles:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Run daily update script
+        env:
+          NAVER_CLIENT_ID: ${{ secrets.NAVER_CLIENT_ID }}
+          NAVER_CLIENT_SECRET: ${{ secrets.NAVER_CLIENT_SECRET }}
+        run: node scripts/daily-update.mjs
+
+      - name: Log completion
+        run: echo "Daily update completed at $(date)"
