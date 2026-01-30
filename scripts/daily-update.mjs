@@ -19,95 +19,24 @@ const CATEGORIES = {
   it: '575wm01lh7c29c6',
 };
 
-// 지자체 보도자료 설정 (실제 동작 확인된 URL)
+// 지자체 보도자료 설정 - 수원시만 (안정적으로 동작)
 const GOVERNMENT_SOURCES = [
-  // 수원시 - 작동 확인됨
   {
     name: '수원시',
     tag: '수원',
     listUrl: 'https://www.suwon.go.kr/web/board/BD_board.list.do?bbsCd=1042&q_currPage=1',
     baseUrl: 'https://www.suwon.go.kr',
-    listSelector: 'table.board_list tbody tr',
-    titleSelector: 'td.subject a, td:nth-child(2) a',
+    listSelector: 'table tbody tr',
+    titleSelector: 'td.p-subject a',
     dateSelector: 'td:nth-child(5)',
-    linkAttr: 'href',
-  },
-  // 경기도청
-  {
-    name: '경기도',
-    tag: '경기',
-    listUrl: 'https://gnews.gg.go.kr/briefing/brief_gongbo_list.do',
-    baseUrl: 'https://gnews.gg.go.kr',
-    listSelector: '.board_list tbody tr, table tbody tr',
-    titleSelector: 'td.subject a, td a',
-    dateSelector: 'td.date, td:nth-child(4)',
-    linkAttr: 'href',
-  },
-  // 화성시
-  {
-    name: '화성시',
-    tag: '화성',
-    listUrl: 'https://www.hscity.go.kr/www/user/bbs/BD_selectBbsList.do?q_bbsCode=1020',
-    baseUrl: 'https://www.hscity.go.kr',
-    listSelector: 'table tbody tr',
-    titleSelector: 'td.subject a, td a',
-    dateSelector: 'td:nth-child(4)',
-    linkAttr: 'href',
-  },
-  // 부천시
-  {
-    name: '부천시',
-    tag: '부천',
-    listUrl: 'https://www.bucheon.go.kr/site/program/board/basicboard/list?boardtypeid=24&menuid=148001005002',
-    baseUrl: 'https://www.bucheon.go.kr',
-    listSelector: 'table tbody tr',
-    titleSelector: 'td.subject a, td a',
-    dateSelector: 'td.date, td:nth-child(4)',
-    linkAttr: 'href',
-  },
-  // 평택시
-  {
-    name: '평택시',
-    tag: '평택',
-    listUrl: 'https://www.pyeongtaek.go.kr/pyeongtaek/bbs/list.do?bbsId=press_release',
-    baseUrl: 'https://www.pyeongtaek.go.kr',
-    listSelector: 'table tbody tr',
-    titleSelector: 'td.subject a, td a',
-    dateSelector: 'td.date, td:nth-child(4)',
-    linkAttr: 'href',
-  },
-  // 안산시
-  {
-    name: '안산시',
-    tag: '안산',
-    listUrl: 'https://www.ansan.go.kr/www/selectBbsNttList.do?bbsNo=196',
-    baseUrl: 'https://www.ansan.go.kr',
-    listSelector: 'table tbody tr',
-    titleSelector: 'td.subject a, td a',
-    dateSelector: 'td:nth-child(4)',
-    linkAttr: 'href',
-  },
-  // 남양주시
-  {
-    name: '남양주시',
-    tag: '남양주',
-    listUrl: 'https://www.nyj.go.kr/main/5395/5399/bbsList.do',
-    baseUrl: 'https://www.nyj.go.kr',
-    listSelector: 'table tbody tr',
-    titleSelector: 'td.subject a, td a',
-    dateSelector: 'td.date, td:nth-child(4)',
-    linkAttr: 'href',
-  },
-  // 시흥시
-  {
-    name: '시흥시',
-    tag: '시흥',
-    listUrl: 'https://www.siheung.go.kr/main/bbs/list.do?bbs_code=BBS_0000002',
-    baseUrl: 'https://www.siheung.go.kr',
-    listSelector: 'table tbody tr',
-    titleSelector: 'td.subject a, td a',
-    dateSelector: 'td.date, td:nth-child(4)',
-    linkAttr: 'href',
+    // 수원시는 onclick="jsView('1042', 'seq', 'Y', 'Y')" 형식
+    linkPattern: (onclick) => {
+      const match = onclick.match(/jsView\('(\d+)',\s*'(\d+)'/);
+      if (match) {
+        return `https://www.suwon.go.kr/web/board/BD_board.view.do?bbsCd=${match[1]}&seq=${match[2]}`;
+      }
+      return null;
+    },
   },
 ];
 
@@ -115,7 +44,7 @@ const GOVERNMENT_SOURCES = [
 async function fetchPage(url) {
   try {
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 10000); // 10초 타임아웃
+    const timeout = setTimeout(() => controller.abort(), 15000);
 
     const response = await fetch(url, {
       headers: {
@@ -150,65 +79,40 @@ function parseArticleList(html, source) {
     const $ = cheerio.load(html);
     const articles = [];
 
-    // 여러 셀렉터 시도
-    const selectors = source.listSelector.split(',').map(s => s.trim());
-    let rows = [];
-
-    for (const selector of selectors) {
-      const found = $(selector);
-      if (found.length > 0) {
-        rows = found;
-        break;
-      }
+    const rows = $(source.listSelector);
+    if (rows.length === 0) {
+      console.log(`  ! 셀렉터 "${source.listSelector}"로 행을 찾을 수 없음`);
+      return [];
     }
 
     rows.each((i, el) => {
       if (i >= 5) return; // 최대 5개만
 
       const $el = $(el);
-
-      // 제목 추출 시도
-      const titleSelectors = source.titleSelector.split(',').map(s => s.trim());
-      let title = '';
-      let linkEl = null;
-
-      for (const selector of titleSelectors) {
-        const found = $el.find(selector);
-        if (found.length && found.text().trim().length > 5) {
-          title = found.text().trim();
-          linkEl = found;
-          break;
-        }
-      }
+      const titleEl = $el.find(source.titleSelector);
+      const title = titleEl.text().trim().replace(/\s+/g, ' ');
 
       if (!title || title.length < 5) return;
 
-      let link = linkEl?.attr(source.linkAttr) || linkEl?.attr('onclick') || '';
-
       // onclick에서 URL 추출
-      if (link && link.includes('(')) {
-        const match = link.match(/['"]([^'"]+)['"]/);
-        if (match) link = match[1];
-      }
+      let link = null;
+      const onclick = titleEl.attr('onclick');
 
-      // 상대 경로를 절대 경로로
-      if (link && !link.startsWith('http')) {
-        link = source.baseUrl + (link.startsWith('/') ? '' : '/') + link;
-      }
-
-      // 날짜 추출
-      const dateSelectors = source.dateSelector.split(',').map(s => s.trim());
-      let date = '';
-      for (const selector of dateSelectors) {
-        const found = $el.find(selector);
-        if (found.length && found.text().trim()) {
-          date = found.text().trim();
-          break;
+      if (onclick && source.linkPattern) {
+        link = source.linkPattern(onclick);
+      } else if (titleEl.attr('href') && titleEl.attr('href') !== '#') {
+        link = titleEl.attr('href');
+        if (!link.startsWith('http')) {
+          link = source.baseUrl + (link.startsWith('/') ? '' : '/') + link;
         }
       }
 
+      // 날짜 추출
+      const dateEl = $el.find(source.dateSelector);
+      const date = dateEl.text().trim();
+
       if (title && link) {
-        articles.push({ title: title.replace(/\s+/g, ' '), link, date });
+        articles.push({ title, link, date });
       }
     });
 
@@ -230,6 +134,7 @@ async function parseArticleDetail(url) {
     // 본문 내용 추출 (다양한 선택자 시도)
     let content = '';
     const contentSelectors = [
+      '.p-view__content',
       '.board_view_content',
       '.view_content',
       '.view-body',
@@ -254,6 +159,7 @@ async function parseArticleDetail(url) {
     // 이미지 추출 (본문 내 첫 번째 이미지)
     let imageUrl = null;
     const imgSelectors = [
+      '.p-view__content img',
       '.board_view_content img',
       '.view_content img',
       '.view-body img',
@@ -267,10 +173,9 @@ async function parseArticleDetail(url) {
       const img = $(selector).first();
       if (img.length) {
         const src = img.attr('src');
-        if (src && !src.includes('icon') && !src.includes('bullet') && !src.includes('btn')) {
+        if (src && !src.includes('icon') && !src.includes('bullet') && !src.includes('btn') && !src.includes('logo')) {
           imageUrl = src;
           if (imageUrl && !imageUrl.startsWith('http')) {
-            // 상대 경로를 절대 경로로
             const urlObj = new URL(url);
             imageUrl = urlObj.origin + (imageUrl.startsWith('/') ? '' : '/') + imageUrl;
           }
@@ -284,7 +189,7 @@ async function parseArticleDetail(url) {
       const ogImage = $('meta[property="og:image"]').attr('content');
       if (ogImage && !ogImage.includes('logo')) {
         imageUrl = ogImage;
-        if (imageUrl && !imageUrl.startsWith('http')) {
+        if (!imageUrl.startsWith('http')) {
           const urlObj = new URL(url);
           imageUrl = urlObj.origin + (imageUrl.startsWith('/') ? '' : '/') + imageUrl;
         }
@@ -297,7 +202,6 @@ async function parseArticleDetail(url) {
                   '';
 
     if (!summary && content) {
-      // HTML 태그 제거하고 첫 150자
       summary = content.replace(/<[^>]*>/g, '').trim().slice(0, 150);
     }
 
@@ -337,31 +241,36 @@ async function createArticle(articleData) {
 // 이미지 업로드
 async function uploadImage(recordId, imageUrl) {
   try {
-    // 이미지 다운로드
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 15000);
+    const timeout = setTimeout(() => controller.abort(), 20000);
 
     const imageResponse = await fetch(imageUrl, {
       headers: {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+        'Referer': imageUrl,
       },
       signal: controller.signal,
     });
 
     clearTimeout(timeout);
 
-    if (!imageResponse.ok) return false;
+    if (!imageResponse.ok) {
+      console.log(`  ! 이미지 다운로드 실패: ${imageResponse.status}`);
+      return false;
+    }
 
     const imageBuffer = await imageResponse.arrayBuffer();
 
     // 너무 작은 이미지 스킵 (아이콘 등)
-    if (imageBuffer.byteLength < 5000) return false;
+    if (imageBuffer.byteLength < 5000) {
+      console.log(`  ! 이미지 너무 작음: ${imageBuffer.byteLength} bytes`);
+      return false;
+    }
 
     const contentType = imageResponse.headers.get('content-type') || 'image/jpeg';
     const ext = contentType.includes('png') ? 'png' : 'jpg';
     const fileName = `thumb_${Date.now()}.${ext}`;
 
-    // FormData로 업로드
     const formData = new FormData();
     formData.append('thumbnail', new Blob([imageBuffer], { type: contentType }), fileName);
 
@@ -442,6 +351,9 @@ async function main() {
         continue;
       }
 
+      console.log(`  - 처리 중: ${article.title.slice(0, 40)}...`);
+      console.log(`    URL: ${article.link}`);
+
       // 상세 페이지 파싱
       const detail = await parseArticleDetail(article.link);
 
@@ -468,20 +380,21 @@ async function main() {
 
         // 이미지 업로드
         if (detail?.imageUrl) {
+          console.log(`    이미지 URL: ${detail.imageUrl}`);
           const uploaded = await uploadImage(record.id, detail.imageUrl);
           if (uploaded) {
             totalWithImage++;
-            console.log(`  + 추가 (이미지 O): ${article.title.slice(0, 35)}...`);
+            console.log(`  ✓ 추가 완료 (이미지 O)`);
           } else {
-            console.log(`  + 추가 (이미지 X): ${article.title.slice(0, 35)}...`);
+            console.log(`  ✓ 추가 완료 (이미지 X)`);
           }
         } else {
-          console.log(`  + 추가 (이미지 X): ${article.title.slice(0, 35)}...`);
+          console.log(`  ✓ 추가 완료 (이미지 없음)`);
         }
       }
 
       // 속도 제한
-      await new Promise(r => setTimeout(r, 1000));
+      await new Promise(r => setTimeout(r, 1500));
     }
 
     // 지자체 간 딜레이
