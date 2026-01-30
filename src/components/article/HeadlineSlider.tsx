@@ -60,6 +60,11 @@ export default function HeadlineSlider() {
 
   return (
     <div className="relative aspect-[21/9] rounded-xl overflow-hidden group">
+      {/* Clickable Link covering the entire area */}
+      <Link href={`/article/${currentHeadline.slug}`} className="absolute inset-0 z-10">
+        <span className="sr-only">{currentHeadline.title} 기사 보기</span>
+      </Link>
+
       {/* Background Image */}
       <Image
         src={getImageUrl(currentHeadline)}
@@ -71,15 +76,13 @@ export default function HeadlineSlider() {
       <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
 
       {/* Content */}
-      <div className="absolute bottom-0 left-0 right-0 p-6 md:p-10 text-white">
+      <div className="absolute bottom-0 left-0 right-0 p-6 md:p-10 text-white pointer-events-none">
         <span className="inline-block bg-primary px-4 py-1 rounded-full text-sm font-medium mb-3">
           {currentHeadline.expand?.category?.name || '일반'}
         </span>
-        <Link href={`/article/${currentHeadline.slug}`}>
-          <h2 className="text-2xl md:text-4xl font-bold line-clamp-2 hover:text-blue-300 transition-colors mb-3">
-            {currentHeadline.title}
-          </h2>
-        </Link>
+        <h2 className="text-2xl md:text-4xl font-bold line-clamp-2 group-hover:text-blue-300 transition-colors mb-3">
+          {currentHeadline.title}
+        </h2>
         <p className="text-slate-300 line-clamp-2 max-w-3xl mb-4 hidden md:block">
           {currentHeadline.summary}
         </p>
@@ -96,13 +99,13 @@ export default function HeadlineSlider() {
         <>
           <button
             onClick={prevSlide}
-            className="absolute left-4 top-1/2 -translate-y-1/2 w-10 h-10 bg-black/50 rounded-full flex items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-opacity hover:bg-black/70"
+            className="absolute left-4 top-1/2 -translate-y-1/2 w-10 h-10 bg-black/50 rounded-full flex items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-opacity hover:bg-black/70 z-20"
           >
             <ChevronLeft className="w-6 h-6" />
           </button>
           <button
             onClick={nextSlide}
-            className="absolute right-4 top-1/2 -translate-y-1/2 w-10 h-10 bg-black/50 rounded-full flex items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-opacity hover:bg-black/70"
+            className="absolute right-4 top-1/2 -translate-y-1/2 w-10 h-10 bg-black/50 rounded-full flex items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-opacity hover:bg-black/70 z-20"
           >
             <ChevronRight className="w-6 h-6" />
           </button>
@@ -111,7 +114,7 @@ export default function HeadlineSlider() {
 
       {/* Dots */}
       {headlines.length > 1 && (
-        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2">
+        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2 z-20">
           {headlines.map((_, index) => (
             <button
               key={index}
