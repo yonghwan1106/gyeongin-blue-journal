@@ -18,6 +18,7 @@
     "date-fns": "^4.1.0",
     "lucide-react": "^0.563.0",
     "next": "^16.1.6",
+    "playwright": "^1.58.0",
     "pocketbase": "^0.26.8",
     "postcss": "^8.5.6",
     "react": "^19.2.4",
