@@ -156,58 +156,64 @@ mcp__pocketbase-mcp__list_records 사용:
 
 ---
 
-## 보도자료 소스
+## 보도자료 소스 (2026-01-30 확인 완료)
 
-### 경기도 31개 시군 + 인천시 보도자료 URL
+### 경기도 31개 시군 + 인천시 보도자료 직접 URL
 
-#### 경기도청 및 특례시/대도시
-| 지자체 | 보도자료 페이지 |
-|--------|----------------|
-| 경기도 | https://www.gg.go.kr (뉴스 > 보도자료) |
-| 수원시 | https://www.suwon.go.kr |
-| 성남시 | https://www.seongnam.go.kr |
-| 용인시 | https://www.yongin.go.kr |
-| 고양시 | https://www.goyang.go.kr |
-| 화성시 | https://www.hscity.go.kr |
-| 부천시 | https://www.bucheon.go.kr |
-| 안산시 | https://www.ansan.go.kr |
-| 안양시 | https://www.anyang.go.kr |
-| 남양주시 | https://www.nyj.go.kr |
-| 평택시 | https://www.pyeongtaek.go.kr |
+> 모든 URL은 2026-01-30 기준 Playwright로 직접 확인됨
 
-#### 경기도 중소도시
-| 지자체 | 보도자료 페이지 |
-|--------|----------------|
-| 의정부시 | https://www.ui4u.go.kr |
-| 시흥시 | https://www.siheung.go.kr |
-| 파주시 | https://www.paju.go.kr |
-| 광명시 | https://www.gm.go.kr |
-| 김포시 | https://www.gimpo.go.kr |
-| 군포시 | https://www.gunpo.go.kr |
-| 광주시 | https://www.gjcity.go.kr |
-| 이천시 | https://www.icheon.go.kr |
-| 양주시 | https://www.yangju.go.kr |
-| 오산시 | https://www.osan.go.kr |
-| 구리시 | https://www.guri.go.kr |
-| 안성시 | https://www.anseong.go.kr |
-| 포천시 | https://www.pocheon.go.kr |
-| 의왕시 | https://www.uiwang.go.kr |
-| 하남시 | https://www.hanam.go.kr |
-| 여주시 | https://www.yeoju.go.kr |
-| 동두천시 | https://www.ddc.go.kr |
-| 과천시 | https://www.gccity.go.kr |
+#### 특례시/대도시 (6개)
+| 지자체 | 보도자료 페이지 URL |
+|--------|---------------------|
+| 수원시 | https://www.suwon.go.kr/web/board/BD_board.list.do?bbsCd=1042 |
+| 성남시 | https://www.seongnam.go.kr/city/1000052/30001/bbsList.do |
+| 용인시 | https://www.yongin.go.kr/news/press/list.do |
+| 고양시 | https://www.goyang.go.kr/www/www05/www0501/www050101.jsp |
+| 화성시 | https://www.hscity.go.kr/www/selectBbsNttList.do?bbsNo=96&key=2871 |
+| 부천시 | https://www.bucheon.go.kr/site/program/board/basicboard/list?boardtypeid=29 |
 
-#### 경기도 군 지역
-| 지자체 | 보도자료 페이지 |
-|--------|----------------|
-| 양평군 | https://www.yp21.go.kr |
-| 가평군 | https://www.gp.go.kr |
-| 연천군 | https://www.yeoncheon.go.kr |
+#### 중소도시 (22개)
+| 지자체 | 보도자료 페이지 URL |
+|--------|---------------------|
+| 안산시 | https://www.ansan.go.kr/www/selectBbsNttList.do?bbsNo=594&key=3032 |
+| 안양시 | https://www.anyang.go.kr/main/selectBbsNttList.do?bbsNo=73&key=256 |
+| 남양주시 | https://www.nyj.go.kr/news/selectBbsNttList.do?bbsNo=1&key=2274 |
+| 평택시 | https://www.pyeongtaek.go.kr/pyeongtaek/selectBbsNttList.do?bbsNo=8&key=1654 |
+| 의정부시 | https://www.ui4u.go.kr/portal/bbs/list.do?ptIdx=49&mId=0301010000 |
+| 시흥시 | https://www.siheung.go.kr/main/selectBbsNttList.do?bbsNo=117&key=649 |
+| 파주시 | https://www.paju.go.kr/user/board/BD_board.list.do?bbsCd=1091&q_ctgCd=1001 |
+| 광명시 | https://www.gm.go.kr/pt/selectBbsNttList.do?bbsNo=91&key=1448 |
+| 김포시 | https://www.gimpo.go.kr/portal/selectBbsNttList.do?bbsNo=299&key=1499 |
+| 군포시 | https://www.gunpo.go.kr/www/selectBbsNttList.do?bbsNo=685&key=3893 |
+| 광주시 | https://www.gjcity.go.kr/portal/selectBbsNttList.do?bbsNo=88&key=1426 |
+| 이천시 | https://www.icheon.go.kr/portal/selectBbsNttList.do?bbsNo=65&key=1516 |
+| 양주시 | https://www.yangju.go.kr/www/selectBbsNttList.do?bbsNo=176&key=2082 |
+| 오산시 | https://www.osan.go.kr/portal/contents.do?mId=0301080000 |
+| 구리시 | https://www.guri.go.kr/cms/selectBbsNttList.do?bbsNo=96&key=498 |
+| 안성시 | https://www.anseong.go.kr/portal/contents.do?mId=0502010000 |
+| 포천시 | https://www.pocheon.go.kr/www/selectBbsNttList.do?bbsNo=243&key=3044 |
+| 의왕시 | https://www.uiwang.go.kr/portal/selectBbsNttList.do?bbsNo=24&key=1277 |
+| 하남시 | https://www.hanam.go.kr/www/selectBbsNttList.do?bbsNo=26&key=1428 |
+| 여주시 | https://www.yeoju.go.kr/brd/board/895/L/menu/610 |
+| 동두천시 | https://www.ddc.go.kr/ddc/selectBbsNttList.do?bbsNo=95&key=1914 |
+| 과천시 | https://www.gccity.go.kr/portal/selectBbsNttList.do?bbsNo=23&key=1248 |
 
-#### 인천광역시
-| 지자체 | 보도자료 페이지 |
-|--------|----------------|
-| 인천시 | https://www.incheon.go.kr |
+#### 군 지역 (3개)
+| 지자체 | 보도자료 페이지 URL |
+|--------|---------------------|
+| 양평군 | https://www.yp21.go.kr/www/selectBbsNttList.do?bbsNo=2&key=1112 |
+| 가평군 | https://www.gp.go.kr/portal/selectBbsNttList.do?bbsNo=72&key=2139 |
+| 연천군 | https://www.yeoncheon.go.kr/portal/selectBbsNttList.do?bbsNo=107&key=1590 |
+
+#### 광역시 (1개)
+| 지자체 | 보도자료 페이지 URL |
+|--------|---------------------|
+| 인천시 | https://www.incheon.go.kr/IC010205 |
+
+#### 경기도청
+| 지자체 | 보도자료 페이지 URL |
+|--------|---------------------|
+| 경기도 | https://gnews.gg.go.kr/briefing/brief_gongbo_list.do |
 
 ---
 
