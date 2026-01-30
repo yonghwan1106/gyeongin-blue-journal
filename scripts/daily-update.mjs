@@ -19,57 +19,94 @@ const CATEGORIES = {
   it: '575wm01lh7c29c6',
 };
 
-// 지자체 보도자료 설정
+// 지자체 보도자료 설정 (실제 동작 확인된 URL)
 const GOVERNMENT_SOURCES = [
+  // 수원시 - 작동 확인됨
   {
     name: '수원시',
     tag: '수원',
     listUrl: 'https://www.suwon.go.kr/web/board/BD_board.list.do?bbsCd=1042&q_currPage=1',
     baseUrl: 'https://www.suwon.go.kr',
-    detailUrlPattern: '/web/board/BD_board.view.do?bbsCd=1042&seq=',
-    listSelector: 'table tbody tr',
-    titleSelector: 'td:nth-child(2) a',
+    listSelector: 'table.board_list tbody tr',
+    titleSelector: 'td.subject a, td:nth-child(2) a',
     dateSelector: 'td:nth-child(5)',
     linkAttr: 'href',
   },
+  // 경기도청
   {
-    name: '성남시',
-    tag: '성남',
-    listUrl: 'https://www.seongnam.go.kr/city/1000060/30001/bbsList.do',
-    baseUrl: 'https://www.seongnam.go.kr',
-    listSelector: '.board_list tbody tr',
-    titleSelector: 'td.subject a',
-    dateSelector: 'td:nth-child(4)',
+    name: '경기도',
+    tag: '경기',
+    listUrl: 'https://gnews.gg.go.kr/briefing/brief_gongbo_list.do',
+    baseUrl: 'https://gnews.gg.go.kr',
+    listSelector: '.board_list tbody tr, table tbody tr',
+    titleSelector: 'td.subject a, td a',
+    dateSelector: 'td.date, td:nth-child(4)',
     linkAttr: 'href',
   },
+  // 화성시
   {
-    name: '용인시',
-    tag: '용인',
-    listUrl: 'https://www.yongin.go.kr/news/pressList.do',
-    baseUrl: 'https://www.yongin.go.kr',
-    listSelector: '.board_list tbody tr',
-    titleSelector: 'td.subject a',
-    dateSelector: 'td.date',
-    linkAttr: 'href',
-  },
-  {
-    name: '고양시',
-    tag: '고양',
-    listUrl: 'https://www.goyang.go.kr/www/www05/www05_1/www05_1_1.jsp',
-    baseUrl: 'https://www.goyang.go.kr',
+    name: '화성시',
+    tag: '화성',
+    listUrl: 'https://www.hscity.go.kr/www/user/bbs/BD_selectBbsList.do?q_bbsCode=1020',
+    baseUrl: 'https://www.hscity.go.kr',
     listSelector: 'table tbody tr',
-    titleSelector: 'td.subject a',
+    titleSelector: 'td.subject a, td a',
     dateSelector: 'td:nth-child(4)',
     linkAttr: 'href',
   },
+  // 부천시
   {
-    name: '인천시',
-    tag: '인천',
-    listUrl: 'https://www.incheon.go.kr/IC010205',
-    baseUrl: 'https://www.incheon.go.kr',
-    listSelector: '.board-list tbody tr',
-    titleSelector: 'td.subject a',
-    dateSelector: 'td.date',
+    name: '부천시',
+    tag: '부천',
+    listUrl: 'https://www.bucheon.go.kr/site/program/board/basicboard/list?boardtypeid=24&menuid=148001005002',
+    baseUrl: 'https://www.bucheon.go.kr',
+    listSelector: 'table tbody tr',
+    titleSelector: 'td.subject a, td a',
+    dateSelector: 'td.date, td:nth-child(4)',
+    linkAttr: 'href',
+  },
+  // 평택시
+  {
+    name: '평택시',
+    tag: '평택',
+    listUrl: 'https://www.pyeongtaek.go.kr/pyeongtaek/bbs/list.do?bbsId=press_release',
+    baseUrl: 'https://www.pyeongtaek.go.kr',
+    listSelector: 'table tbody tr',
+    titleSelector: 'td.subject a, td a',
+    dateSelector: 'td.date, td:nth-child(4)',
+    linkAttr: 'href',
+  },
+  // 안산시
+  {
+    name: '안산시',
+    tag: '안산',
+    listUrl: 'https://www.ansan.go.kr/www/selectBbsNttList.do?bbsNo=196',
+    baseUrl: 'https://www.ansan.go.kr',
+    listSelector: 'table tbody tr',
+    titleSelector: 'td.subject a, td a',
+    dateSelector: 'td:nth-child(4)',
+    linkAttr: 'href',
+  },
+  // 남양주시
+  {
+    name: '남양주시',
+    tag: '남양주',
+    listUrl: 'https://www.nyj.go.kr/main/5395/5399/bbsList.do',
+    baseUrl: 'https://www.nyj.go.kr',
+    listSelector: 'table tbody tr',
+    titleSelector: 'td.subject a, td a',
+    dateSelector: 'td.date, td:nth-child(4)',
+    linkAttr: 'href',
+  },
+  // 시흥시
+  {
+    name: '시흥시',
+    tag: '시흥',
+    listUrl: 'https://www.siheung.go.kr/main/bbs/list.do?bbs_code=BBS_0000002',
+    baseUrl: 'https://www.siheung.go.kr',
+    listSelector: 'table tbody tr',
+    titleSelector: 'td.subject a, td a',
+    dateSelector: 'td.date, td:nth-child(4)',
     linkAttr: 'href',
   },
 ];
@@ -77,13 +114,19 @@ const GOVERNMENT_SOURCES = [
 // HTML 페이지 가져오기
 async function fetchPage(url) {
   try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 10000); // 10초 타임아웃
+
     const response = await fetch(url, {
       headers: {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
         'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
         'Accept-Language': 'ko-KR,ko;q=0.9,en-US;q=0.8,en;q=0.7',
       },
+      signal: controller.signal,
     });
+
+    clearTimeout(timeout);
 
     if (!response.ok) {
       console.log(`  ! 페이지 로드 실패: ${response.status}`);
@@ -92,7 +135,11 @@ async function fetchPage(url) {
 
     return await response.text();
   } catch (error) {
-    console.log(`  ! 페이지 접근 오류: ${error.message}`);
+    if (error.name === 'AbortError') {
+      console.log(`  ! 타임아웃`);
+    } else {
+      console.log(`  ! 페이지 접근 오류: ${error.message}`);
+    }
     return null;
   }
 }
@@ -103,16 +150,40 @@ function parseArticleList(html, source) {
     const $ = cheerio.load(html);
     const articles = [];
 
-    $(source.listSelector).each((i, el) => {
+    // 여러 셀렉터 시도
+    const selectors = source.listSelector.split(',').map(s => s.trim());
+    let rows = [];
+
+    for (const selector of selectors) {
+      const found = $(selector);
+      if (found.length > 0) {
+        rows = found;
+        break;
+      }
+    }
+
+    rows.each((i, el) => {
       if (i >= 5) return; // 최대 5개만
 
       const $el = $(el);
-      const titleEl = $el.find(source.titleSelector);
-      const title = titleEl.text().trim();
+
+      // 제목 추출 시도
+      const titleSelectors = source.titleSelector.split(',').map(s => s.trim());
+      let title = '';
+      let linkEl = null;
+
+      for (const selector of titleSelectors) {
+        const found = $el.find(selector);
+        if (found.length && found.text().trim().length > 5) {
+          title = found.text().trim();
+          linkEl = found;
+          break;
+        }
+      }
 
       if (!title || title.length < 5) return;
 
-      let link = titleEl.attr(source.linkAttr) || titleEl.attr('onclick');
+      let link = linkEl?.attr(source.linkAttr) || linkEl?.attr('onclick') || '';
 
       // onclick에서 URL 추출
       if (link && link.includes('(')) {
@@ -125,11 +196,19 @@ function parseArticleList(html, source) {
         link = source.baseUrl + (link.startsWith('/') ? '' : '/') + link;
       }
 
-      const dateEl = $el.find(source.dateSelector);
-      const date = dateEl.text().trim();
+      // 날짜 추출
+      const dateSelectors = source.dateSelector.split(',').map(s => s.trim());
+      let date = '';
+      for (const selector of dateSelectors) {
+        const found = $el.find(selector);
+        if (found.length && found.text().trim()) {
+          date = found.text().trim();
+          break;
+        }
+      }
 
       if (title && link) {
-        articles.push({ title, link, date });
+        articles.push({ title: title.replace(/\s+/g, ' '), link, date });
       }
     });
 
@@ -153,11 +232,15 @@ async function parseArticleDetail(url) {
     const contentSelectors = [
       '.board_view_content',
       '.view_content',
+      '.view-body',
+      '.bbs_view_content',
       '.content',
       '.board_content',
       '.bbs_content',
       '#content',
+      '.article_content',
       'article',
+      '.detail_content',
     ];
 
     for (const selector of contentSelectors) {
@@ -173,29 +256,38 @@ async function parseArticleDetail(url) {
     const imgSelectors = [
       '.board_view_content img',
       '.view_content img',
+      '.view-body img',
       '.content img',
       'article img',
       '.bbs_content img',
+      '.detail_content img',
     ];
 
     for (const selector of imgSelectors) {
       const img = $(selector).first();
       if (img.length) {
-        imageUrl = img.attr('src');
-        if (imageUrl && !imageUrl.startsWith('http')) {
-          // 상대 경로를 절대 경로로
-          const urlObj = new URL(url);
-          imageUrl = urlObj.origin + (imageUrl.startsWith('/') ? '' : '/') + imageUrl;
+        const src = img.attr('src');
+        if (src && !src.includes('icon') && !src.includes('bullet') && !src.includes('btn')) {
+          imageUrl = src;
+          if (imageUrl && !imageUrl.startsWith('http')) {
+            // 상대 경로를 절대 경로로
+            const urlObj = new URL(url);
+            imageUrl = urlObj.origin + (imageUrl.startsWith('/') ? '' : '/') + imageUrl;
+          }
+          break;
         }
-        break;
       }
     }
 
     // og:image 메타태그 확인 (백업)
     if (!imageUrl) {
       const ogImage = $('meta[property="og:image"]').attr('content');
-      if (ogImage) {
+      if (ogImage && !ogImage.includes('logo')) {
         imageUrl = ogImage;
+        if (imageUrl && !imageUrl.startsWith('http')) {
+          const urlObj = new URL(url);
+          imageUrl = urlObj.origin + (imageUrl.startsWith('/') ? '' : '/') + imageUrl;
+        }
       }
     }
 
@@ -246,15 +338,25 @@ async function createArticle(articleData) {
 async function uploadImage(recordId, imageUrl) {
   try {
     // 이미지 다운로드
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 15000);
+
     const imageResponse = await fetch(imageUrl, {
       headers: {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
       },
+      signal: controller.signal,
     });
+
+    clearTimeout(timeout);
 
     if (!imageResponse.ok) return false;
 
     const imageBuffer = await imageResponse.arrayBuffer();
+
+    // 너무 작은 이미지 스킵 (아이콘 등)
+    if (imageBuffer.byteLength < 5000) return false;
+
     const contentType = imageResponse.headers.get('content-type') || 'image/jpeg';
     const ext = contentType.includes('png') ? 'png' : 'jpg';
     const fileName = `thumb_${Date.now()}.${ext}`;
@@ -295,11 +397,11 @@ async function checkDuplicate(title) {
 
 // 카테고리 자동 분류
 function categorize(text) {
-  if (/선거|의회|정당|국회|시장|군수|구청장/.test(text)) return CATEGORIES.politics;
-  if (/기업|일자리|경제|투자|창업|산업|예산|세금|지원금/.test(text)) return CATEGORIES.economy;
-  if (/축제|문화|예술|공연|전시|관광|문화재/.test(text)) return CATEGORIES.culture;
-  if (/체육|스포츠|대회|경기|선수/.test(text)) return CATEGORIES.sports;
-  if (/ai|AI|스마트|IT|과학|기술|디지털|로봇/.test(text)) return CATEGORIES.it;
+  if (/선거|의회|정당|국회|시장|군수|구청장|도지사/.test(text)) return CATEGORIES.politics;
+  if (/기업|일자리|경제|투자|창업|산업|예산|세금|지원금|고용/.test(text)) return CATEGORIES.economy;
+  if (/축제|문화|예술|공연|전시|관광|문화재|박물관/.test(text)) return CATEGORIES.culture;
+  if (/체육|스포츠|대회|경기|선수|올림픽/.test(text)) return CATEGORIES.sports;
+  if (/ai|AI|스마트|IT|과학|기술|디지털|로봇|드론/.test(text)) return CATEGORIES.it;
   return CATEGORIES.society;
 }
 
