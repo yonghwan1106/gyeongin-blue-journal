@@ -227,11 +227,13 @@ export default function ArticlesPage() {
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-1 text-sm text-secondary">
                         <Eye className="w-4 h-4" />
-                        {article.views.toLocaleString()}
+                        {(article.views || 0).toLocaleString()}
                       </div>
                     </td>
                     <td className="px-6 py-4 text-sm text-secondary">
-                      {format(new Date(article.created), 'yyyy.MM.dd', { locale: ko })}
+                      {article.published_at
+                        ? format(new Date(article.published_at), 'yyyy.MM.dd', { locale: ko })
+                        : '-'}
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex items-center justify-end gap-2">
