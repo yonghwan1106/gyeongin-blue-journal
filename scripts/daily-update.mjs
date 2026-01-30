@@ -5,6 +5,40 @@
 
 const POCKETBASE_URL = 'http://158.247.210.200:8090';
 
+// 관리자 인증 토큰 (GitHub Secrets에서 가져옴)
+let authToken = null;
+
+// 관리자 로그인
+async function adminLogin() {
+  const email = process.env.POCKETBASE_ADMIN_EMAIL;
+  const password = process.env.POCKETBASE_ADMIN_PASSWORD;
+
+  if (!email || !password) {
+    console.log('PocketBase 관리자 인증 정보가 없습니다. 공개 API로 시도합니다.');
+    return null;
+  }
+
+  try {
+    const response = await fetch(`${POCKETBASE_URL}/api/admins/auth-with-password`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ identity: email, password }),
+    });
+
+    if (!response.ok) {
+      console.log('관리자 로그인 실패');
+      return null;
+    }
+
+    const data = await response.json();
+    console.log('관리자 로그인 성공');
+    return data.token;
+  } catch (error) {
+    console.error('로그인 오류:', error.message);
+    return null;
+  }
+}
+
 // 카테고리 ID
 const CATEGORIES = {
   politics: 'mq8899s58bf0699',
@@ -74,11 +108,18 @@ async function createArticle(articleData) {
       published_at: new Date().toISOString(),
     };
 
+    const headers = {
+      'Content-Type': 'application/json',
+    };
+
+    // 인증 토큰이 있으면 추가
+    if (authToken) {
+      headers['Authorization'] = authToken;
+    }
+
     const response = await fetch(`${POCKETBASE_URL}/api/collections/articles/records`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers,
       body: JSON.stringify(payload),
     });
 
@@ -153,6 +194,9 @@ function stripHtml(html) {
 async function main() {
   console.log('===== 경인블루저널 일일 업데이트 시작 =====');
   console.log(`실행 시간: ${new Date().toLocaleString('ko-KR', { timeZone: 'Asia/Seoul' })}`);
+
+  // 관리자 로그인
+  authToken = await adminLogin();
 
   let totalAdded = 0;
   let totalSkipped = 0;
