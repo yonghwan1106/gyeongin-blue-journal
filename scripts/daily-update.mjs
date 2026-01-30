@@ -1,43 +1,13 @@
 /**
  * 경인블루저널 일일 기사 자동 업데이트 스크립트
- * GitHub Actions에서 매일 실행됨
+ * 지자체 보도자료 직접 수집 방식 (저작권 안전)
+ *
+ * GitHub Actions에서 매일 오전 9시 실행
  */
 
+import * as cheerio from 'cheerio';
+
 const POCKETBASE_URL = 'http://158.247.210.200:8090';
-
-// 관리자 인증 토큰 (GitHub Secrets에서 가져옴)
-let authToken = null;
-
-// 관리자 로그인
-async function adminLogin() {
-  const email = process.env.POCKETBASE_ADMIN_EMAIL;
-  const password = process.env.POCKETBASE_ADMIN_PASSWORD;
-
-  if (!email || !password) {
-    console.log('PocketBase 관리자 인증 정보가 없습니다. 공개 API로 시도합니다.');
-    return null;
-  }
-
-  try {
-    const response = await fetch(`${POCKETBASE_URL}/api/admins/auth-with-password`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ identity: email, password }),
-    });
-
-    if (!response.ok) {
-      console.log('관리자 로그인 실패');
-      return null;
-    }
-
-    const data = await response.json();
-    console.log('관리자 로그인 성공');
-    return data.token;
-  } catch (error) {
-    console.error('로그인 오류:', error.message);
-    return null;
-  }
-}
 
 // 카테고리 ID
 const CATEGORIES = {
@@ -49,104 +19,273 @@ const CATEGORIES = {
   it: '575wm01lh7c29c6',
 };
 
-// 지역 목록 (태그용)
-const REGIONS = [
-  '경기', '인천', '수원', '성남', '용인', '고양', '화성', '부천',
-  '안산', '안양', '남양주', '평택', '의정부', '시흥', '파주', '광명',
-  '김포', '군포', '광주', '이천', '양주', '오산', '구리', '안성',
-  '포천', '의왕', '하남', '여주', '동두천', '과천', '양평', '가평', '연천'
+// 지자체 보도자료 설정
+const GOVERNMENT_SOURCES = [
+  {
+    name: '수원시',
+    tag: '수원',
+    listUrl: 'https://www.suwon.go.kr/web/board/BD_board.list.do?bbsCd=1042&q_currPage=1',
+    baseUrl: 'https://www.suwon.go.kr',
+    detailUrlPattern: '/web/board/BD_board.view.do?bbsCd=1042&seq=',
+    listSelector: 'table tbody tr',
+    titleSelector: 'td:nth-child(2) a',
+    dateSelector: 'td:nth-child(5)',
+    linkAttr: 'href',
+  },
+  {
+    name: '성남시',
+    tag: '성남',
+    listUrl: 'https://www.seongnam.go.kr/city/1000060/30001/bbsList.do',
+    baseUrl: 'https://www.seongnam.go.kr',
+    listSelector: '.board_list tbody tr',
+    titleSelector: 'td.subject a',
+    dateSelector: 'td:nth-child(4)',
+    linkAttr: 'href',
+  },
+  {
+    name: '용인시',
+    tag: '용인',
+    listUrl: 'https://www.yongin.go.kr/news/pressList.do',
+    baseUrl: 'https://www.yongin.go.kr',
+    listSelector: '.board_list tbody tr',
+    titleSelector: 'td.subject a',
+    dateSelector: 'td.date',
+    linkAttr: 'href',
+  },
+  {
+    name: '고양시',
+    tag: '고양',
+    listUrl: 'https://www.goyang.go.kr/www/www05/www05_1/www05_1_1.jsp',
+    baseUrl: 'https://www.goyang.go.kr',
+    listSelector: 'table tbody tr',
+    titleSelector: 'td.subject a',
+    dateSelector: 'td:nth-child(4)',
+    linkAttr: 'href',
+  },
+  {
+    name: '인천시',
+    tag: '인천',
+    listUrl: 'https://www.incheon.go.kr/IC010205',
+    baseUrl: 'https://www.incheon.go.kr',
+    listSelector: '.board-list tbody tr',
+    titleSelector: 'td.subject a',
+    dateSelector: 'td.date',
+    linkAttr: 'href',
+  },
 ];
 
-// 네이버 뉴스 검색 API
-async function searchNaverNews(query) {
-  const clientId = process.env.NAVER_CLIENT_ID;
-  const clientSecret = process.env.NAVER_CLIENT_SECRET;
-
-  if (!clientId || !clientSecret) {
-    console.log('네이버 API 키가 설정되지 않았습니다.');
-    return [];
-  }
-
+// HTML 페이지 가져오기
+async function fetchPage(url) {
   try {
-    const response = await fetch(
-      `https://openapi.naver.com/v1/search/news.json?query=${encodeURIComponent(query)}&display=10&sort=date`,
-      {
-        headers: {
-          'X-Naver-Client-Id': clientId,
-          'X-Naver-Client-Secret': clientSecret,
-        },
-      }
-    );
+    const response = await fetch(url, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+        'Accept-Language': 'ko-KR,ko;q=0.9,en-US;q=0.8,en;q=0.7',
+      },
+    });
 
     if (!response.ok) {
-      console.log(`네이버 API 응답 오류: ${response.status}`);
-      return [];
+      console.log(`  ! 페이지 로드 실패: ${response.status}`);
+      return null;
     }
 
-    const data = await response.json();
-    return data.items || [];
+    return await response.text();
   } catch (error) {
-    console.error('네이버 뉴스 검색 실패:', error.message);
+    console.log(`  ! 페이지 접근 오류: ${error.message}`);
+    return null;
+  }
+}
+
+// 보도자료 목록에서 기사 추출
+function parseArticleList(html, source) {
+  try {
+    const $ = cheerio.load(html);
+    const articles = [];
+
+    $(source.listSelector).each((i, el) => {
+      if (i >= 5) return; // 최대 5개만
+
+      const $el = $(el);
+      const titleEl = $el.find(source.titleSelector);
+      const title = titleEl.text().trim();
+
+      if (!title || title.length < 5) return;
+
+      let link = titleEl.attr(source.linkAttr) || titleEl.attr('onclick');
+
+      // onclick에서 URL 추출
+      if (link && link.includes('(')) {
+        const match = link.match(/['"]([^'"]+)['"]/);
+        if (match) link = match[1];
+      }
+
+      // 상대 경로를 절대 경로로
+      if (link && !link.startsWith('http')) {
+        link = source.baseUrl + (link.startsWith('/') ? '' : '/') + link;
+      }
+
+      const dateEl = $el.find(source.dateSelector);
+      const date = dateEl.text().trim();
+
+      if (title && link) {
+        articles.push({ title, link, date });
+      }
+    });
+
+    return articles;
+  } catch (error) {
+    console.log(`  ! 파싱 오류: ${error.message}`);
     return [];
   }
 }
 
-// PocketBase에 기사 추가 (JSON 방식)
-async function createArticle(articleData) {
+// 기사 상세 페이지에서 내용과 이미지 추출
+async function parseArticleDetail(url) {
+  const html = await fetchPage(url);
+  if (!html) return null;
+
   try {
-    const payload = {
-      title: articleData.title,
-      slug: articleData.slug,
-      summary: articleData.summary || '',
-      content: articleData.content || '<p>내용을 확인하세요.</p>',
-      category: articleData.category,
-      status: 'published',
-      is_headline: false,
-      is_breaking: false,
-      views: 0,
-      tags: articleData.tags, // 배열 형태로 전송
-      published_at: new Date().toISOString(),
-    };
+    const $ = cheerio.load(html);
 
-    const headers = {
-      'Content-Type': 'application/json',
-    };
+    // 본문 내용 추출 (다양한 선택자 시도)
+    let content = '';
+    const contentSelectors = [
+      '.board_view_content',
+      '.view_content',
+      '.content',
+      '.board_content',
+      '.bbs_content',
+      '#content',
+      'article',
+    ];
 
-    // 인증 토큰이 있으면 추가
-    if (authToken) {
-      headers['Authorization'] = authToken;
+    for (const selector of contentSelectors) {
+      const el = $(selector);
+      if (el.length && el.text().trim().length > 50) {
+        content = el.html();
+        break;
+      }
     }
 
+    // 이미지 추출 (본문 내 첫 번째 이미지)
+    let imageUrl = null;
+    const imgSelectors = [
+      '.board_view_content img',
+      '.view_content img',
+      '.content img',
+      'article img',
+      '.bbs_content img',
+    ];
+
+    for (const selector of imgSelectors) {
+      const img = $(selector).first();
+      if (img.length) {
+        imageUrl = img.attr('src');
+        if (imageUrl && !imageUrl.startsWith('http')) {
+          // 상대 경로를 절대 경로로
+          const urlObj = new URL(url);
+          imageUrl = urlObj.origin + (imageUrl.startsWith('/') ? '' : '/') + imageUrl;
+        }
+        break;
+      }
+    }
+
+    // og:image 메타태그 확인 (백업)
+    if (!imageUrl) {
+      const ogImage = $('meta[property="og:image"]').attr('content');
+      if (ogImage) {
+        imageUrl = ogImage;
+      }
+    }
+
+    // 요약 추출
+    let summary = $('meta[name="description"]').attr('content') ||
+                  $('meta[property="og:description"]').attr('content') ||
+                  '';
+
+    if (!summary && content) {
+      // HTML 태그 제거하고 첫 150자
+      summary = content.replace(/<[^>]*>/g, '').trim().slice(0, 150);
+    }
+
+    return {
+      content: content || '<p>상세 내용은 원문을 확인해주세요.</p>',
+      summary: summary.slice(0, 150),
+      imageUrl,
+    };
+  } catch (error) {
+    console.log(`  ! 상세 파싱 오류: ${error.message}`);
+    return null;
+  }
+}
+
+// PocketBase에 기사 생성
+async function createArticle(articleData) {
+  try {
     const response = await fetch(`${POCKETBASE_URL}/api/collections/articles/records`, {
       method: 'POST',
-      headers,
-      body: JSON.stringify(payload),
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(articleData),
     });
 
     if (!response.ok) {
-      const errorText = await response.text();
-      console.error(`  ! 생성 실패 (${response.status}): ${errorText.slice(0, 100)}`);
+      const error = await response.text();
+      console.log(`  ! 생성 실패: ${error.slice(0, 80)}`);
       return null;
     }
 
     return await response.json();
   } catch (error) {
-    console.error('  ! PocketBase 연결 실패:', error.message);
+    console.log(`  ! DB 오류: ${error.message}`);
     return null;
   }
 }
 
-// 기사 중복 확인 (제목 기준)
+// 이미지 업로드
+async function uploadImage(recordId, imageUrl) {
+  try {
+    // 이미지 다운로드
+    const imageResponse = await fetch(imageUrl, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+      },
+    });
+
+    if (!imageResponse.ok) return false;
+
+    const imageBuffer = await imageResponse.arrayBuffer();
+    const contentType = imageResponse.headers.get('content-type') || 'image/jpeg';
+    const ext = contentType.includes('png') ? 'png' : 'jpg';
+    const fileName = `thumb_${Date.now()}.${ext}`;
+
+    // FormData로 업로드
+    const formData = new FormData();
+    formData.append('thumbnail', new Blob([imageBuffer], { type: contentType }), fileName);
+
+    const uploadResponse = await fetch(
+      `${POCKETBASE_URL}/api/collections/articles/records/${recordId}`,
+      {
+        method: 'PATCH',
+        body: formData,
+      }
+    );
+
+    return uploadResponse.ok;
+  } catch (error) {
+    console.log(`  ! 이미지 업로드 실패: ${error.message}`);
+    return false;
+  }
+}
+
+// 중복 확인
 async function checkDuplicate(title) {
   try {
-    // 제목에서 특수문자 제거하고 검색
-    const cleanTitle = title.replace(/['"]/g, '').slice(0, 50);
+    const cleanTitle = title.replace(/['"]/g, '').slice(0, 30);
     const response = await fetch(
       `${POCKETBASE_URL}/api/collections/articles/records?filter=(title~'${encodeURIComponent(cleanTitle)}')&perPage=1`
     );
-
     if (!response.ok) return false;
-
     const data = await response.json();
     return data.totalItems > 0;
   } catch {
@@ -154,114 +293,106 @@ async function checkDuplicate(title) {
   }
 }
 
-// 텍스트에서 지역 태그 추출
-function extractRegionTags(text) {
-  const tags = [];
-  for (const region of REGIONS) {
-    if (text.includes(region)) {
-      tags.push(region);
-    }
-  }
-  return [...new Set(tags)]; // 중복 제거
-}
-
 // 카테고리 자동 분류
-function categorizeArticle(title, content) {
-  const text = `${title} ${content}`;
-
-  if (/선거|의회|정당|국회|정치|도지사|시장|군수/.test(text)) return CATEGORIES.politics;
-  if (/기업|일자리|경제|투자|창업|산업|예산|세금/.test(text)) return CATEGORIES.economy;
+function categorize(text) {
+  if (/선거|의회|정당|국회|시장|군수|구청장/.test(text)) return CATEGORIES.politics;
+  if (/기업|일자리|경제|투자|창업|산업|예산|세금|지원금/.test(text)) return CATEGORIES.economy;
   if (/축제|문화|예술|공연|전시|관광|문화재/.test(text)) return CATEGORIES.culture;
   if (/체육|스포츠|대회|경기|선수/.test(text)) return CATEGORIES.sports;
   if (/ai|AI|스마트|IT|과학|기술|디지털|로봇/.test(text)) return CATEGORIES.it;
-
-  return CATEGORIES.society; // 기본값
+  return CATEGORIES.society;
 }
 
 // slug 생성
-function generateSlug(title) {
-  const timestamp = Date.now().toString(36);
-  const random = Math.random().toString(36).slice(2, 6);
-  return `news-${timestamp}-${random}`;
+function generateSlug() {
+  return `news-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`;
 }
 
-// HTML 태그 제거
-function stripHtml(html) {
-  return (html || '').replace(/<[^>]*>/g, '').replace(/&quot;/g, '"').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>');
-}
-
-// 메인 실행 함수
+// 메인 함수
 async function main() {
-  console.log('===== 경인블루저널 일일 업데이트 시작 =====');
+  console.log('===== 경인블루저널 일일 업데이트 (지자체 보도자료) =====');
   console.log(`실행 시간: ${new Date().toLocaleString('ko-KR', { timeZone: 'Asia/Seoul' })}`);
-
-  // 관리자 로그인
-  authToken = await adminLogin();
+  console.log('');
 
   let totalAdded = 0;
+  let totalWithImage = 0;
   let totalSkipped = 0;
 
-  // 검색할 지역 목록
-  const searchRegions = ['경기도', '인천시', '수원시', '성남시', '용인시', '고양시', '화성시', '부천시'];
+  for (const source of GOVERNMENT_SOURCES) {
+    console.log(`[${source.name}] 보도자료 수집 중...`);
 
-  for (const region of searchRegions) {
-    console.log(`\n[${region}] 뉴스 검색 중...`);
-
-    const query = `${region} 2026년 1월`;
-    const newsItems = await searchNaverNews(query);
-
-    if (newsItems.length === 0) {
-      console.log(`  - 검색 결과 없음`);
+    // 목록 페이지 가져오기
+    const listHtml = await fetchPage(source.listUrl);
+    if (!listHtml) {
+      console.log(`  - 목록 페이지 접근 실패`);
       continue;
     }
 
-    console.log(`  - ${newsItems.length}개 뉴스 발견`);
+    // 기사 목록 파싱
+    const articles = parseArticleList(listHtml, source);
+    console.log(`  - ${articles.length}개 보도자료 발견`);
 
-    for (const item of newsItems.slice(0, 2)) { // 지역당 최대 2개
-      const title = stripHtml(item.title);
-      const description = stripHtml(item.description);
-
+    for (const article of articles.slice(0, 3)) { // 지자체당 최대 3개
       // 중복 확인
-      if (await checkDuplicate(title)) {
-        console.log(`  - 중복: ${title.slice(0, 35)}...`);
+      if (await checkDuplicate(article.title)) {
+        console.log(`  - 중복: ${article.title.slice(0, 30)}...`);
         totalSkipped++;
         continue;
       }
 
-      // 지역 태그 추출
-      const regionTag = region.replace(/(시|도|군)$/, '');
-      const tags = [regionTag, ...extractRegionTags(title + description)];
-      const uniqueTags = [...new Set(tags)].slice(0, 5); // 최대 5개 태그
+      // 상세 페이지 파싱
+      const detail = await parseArticleDetail(article.link);
 
+      // 기사 데이터 준비
       const articleData = {
-        title: title.slice(0, 200),
-        slug: generateSlug(title),
-        summary: description.slice(0, 150),
-        content: `<p>${description}</p><p><a href="${item.link}" target="_blank">원문 보기</a></p>`,
-        category: categorizeArticle(title, description),
-        tags: uniqueTags,
+        title: article.title.slice(0, 200),
+        slug: generateSlug(),
+        summary: detail?.summary || article.title.slice(0, 100),
+        content: detail?.content || `<p>${article.title}</p><p><a href="${article.link}" target="_blank">원문 보기</a></p>`,
+        category: categorize(article.title),
+        status: 'published',
+        is_headline: false,
+        is_breaking: false,
+        views: 0,
+        tags: [source.tag],
+        published_at: new Date().toISOString(),
       };
 
-      const result = await createArticle(articleData);
+      // 기사 생성
+      const record = await createArticle(articleData);
 
-      if (result) {
-        console.log(`  + 추가: ${title.slice(0, 35)}...`);
+      if (record) {
         totalAdded++;
+
+        // 이미지 업로드
+        if (detail?.imageUrl) {
+          const uploaded = await uploadImage(record.id, detail.imageUrl);
+          if (uploaded) {
+            totalWithImage++;
+            console.log(`  + 추가 (이미지 O): ${article.title.slice(0, 35)}...`);
+          } else {
+            console.log(`  + 추가 (이미지 X): ${article.title.slice(0, 35)}...`);
+          }
+        } else {
+          console.log(`  + 추가 (이미지 X): ${article.title.slice(0, 35)}...`);
+        }
       }
 
-      // API 속도 제한 방지
-      await new Promise(resolve => setTimeout(resolve, 500));
+      // 속도 제한
+      await new Promise(r => setTimeout(r, 1000));
     }
 
-    // 지역 간 딜레이
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    // 지자체 간 딜레이
+    await new Promise(r => setTimeout(r, 2000));
+    console.log('');
   }
 
-  console.log('\n===== 업데이트 완료 =====');
-  console.log(`추가: ${totalAdded}개 / 중복 스킵: ${totalSkipped}개`);
+  console.log('===== 업데이트 완료 =====');
+  console.log(`추가: ${totalAdded}개 (이미지 포함: ${totalWithImage}개)`);
+  console.log(`중복 스킵: ${totalSkipped}개`);
 }
 
 main().catch(error => {
-  console.error('스크립트 실행 오류:', error);
+  console.error('스크립트 오류:', error);
   process.exit(1);
 });
