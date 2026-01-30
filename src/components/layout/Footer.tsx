@@ -1,7 +1,17 @@
+'use client'
+
 import Link from 'next/link'
+import { usePathname } from 'next/navigation'
 import { Mail, Phone, MapPin } from 'lucide-react'
 
 export default function Footer() {
+  const pathname = usePathname()
+
+  // 관리자 페이지에서는 푸터 숨김
+  if (pathname?.startsWith('/admin')) {
+    return null
+  }
+
   return (
     <footer className="bg-slate-900 text-white">
       <div className="max-w-7xl mx-auto px-4 py-12">

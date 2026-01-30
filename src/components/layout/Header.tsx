@@ -2,12 +2,19 @@
 
 import Link from 'next/link'
 import { useState, useEffect } from 'react'
+import { usePathname } from 'next/navigation'
 import { Search, Menu, X, User, LogOut, Bookmark } from 'lucide-react'
 import { useAuthStore } from '@/store/authStore'
 import { getPb } from '@/lib/pocketbase'
 import type { Category } from '@/types'
 
 export default function Header() {
+  const pathname = usePathname()
+
+  // 관리자 페이지에서는 헤더 숨김
+  if (pathname?.startsWith('/admin')) {
+    return null
+  }
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [isSearchOpen, setIsSearchOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
