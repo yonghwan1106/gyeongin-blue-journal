@@ -57,11 +57,16 @@ export default function ArticlesPage() {
         filter += filter ? ` && ${searchFilter}` : searchFilter
       }
 
-      const records = await getPb().collection('articles').getList<Article>(currentPage, perPage, {
-        filter: filter || undefined,
-        sort: '-created',
+      const options: Record<string, unknown> = {
+        sort: '-published_at,-updated',
         expand: 'category,author',
-      })
+      }
+
+      if (filter) {
+        options.filter = filter
+      }
+
+      const records = await getPb().collection('articles').getList<Article>(currentPage, perPage, options)
 
       setArticles(records.items)
       setTotalPages(records.totalPages)
