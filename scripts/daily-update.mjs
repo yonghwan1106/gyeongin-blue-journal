@@ -19,8 +19,9 @@ const CATEGORIES = {
   it: '575wm01lh7c29c6',
 };
 
-// 지자체 보도자료 설정 - 수원시만 (안정적으로 동작)
+// 지자체 보도자료 설정
 const GOVERNMENT_SOURCES = [
+  // 수원시 - onclick="jsView('1042', 'seq', 'Y', 'Y')" 형식
   {
     name: '수원시',
     tag: '수원',
@@ -29,14 +30,219 @@ const GOVERNMENT_SOURCES = [
     listSelector: 'table tbody tr',
     titleSelector: 'td.p-subject a',
     dateSelector: 'td:nth-child(5)',
-    // 수원시는 onclick="jsView('1042', 'seq', 'Y', 'Y')" 형식
     linkPattern: (onclick) => {
-      const match = onclick.match(/jsView\('(\d+)',\s*'(\d+)'/);
+      const match = onclick?.match(/jsView\('(\d+)',\s*'(\d+)'/);
       if (match) {
         return `https://www.suwon.go.kr/web/board/BD_board.view.do?bbsCd=${match[1]}&seq=${match[2]}`;
       }
       return null;
     },
+  },
+  // 인천시 - /IC010205/view?repSeq=... 형식
+  {
+    name: '인천시',
+    tag: '인천',
+    listUrl: 'https://www.incheon.go.kr/IC010205',
+    baseUrl: 'https://www.incheon.go.kr',
+    // 인천시는 카드 형식이므로 a 태그에서 직접 추출
+    customParser: async (html, source) => {
+      const $ = cheerio.load(html);
+      const articles = [];
+
+      $('a[href*="/IC010205/view"]').each((i, el) => {
+        if (i >= 5) return;
+
+        const $el = $(el);
+        const href = $el.attr('href');
+        let title = $el.text().trim().replace(/\s+/g, ' ');
+
+        // "이미지 없음" 텍스트 제거
+        title = title.replace(/이미지 없음/g, '').trim();
+
+        // 너무 짧거나 긴 제목 건너뛰기
+        if (title.length < 10 || title.length > 200) return;
+
+        // 기사 내용 부분 추출 (첫 번째 줄만)
+        const titlePart = title.split('\n')[0].trim();
+        if (titlePart.length < 10) return;
+
+        const link = href.startsWith('http') ? href : source.baseUrl + href;
+        articles.push({ title: titlePart, link, date: '' });
+      });
+
+      return articles;
+    },
+  },
+  // 경기도 - gnews.gg.go.kr
+  {
+    name: '경기도',
+    tag: '경기',
+    listUrl: 'https://gnews.gg.go.kr/briefing/brief_gongbo_list.do?BS_CODE=S017&section=BRIEF_GG01',
+    baseUrl: 'https://gnews.gg.go.kr',
+    listSelector: 'table tbody tr',
+    titleSelector: 'td.subject a, td a',
+    dateSelector: 'td:nth-child(4)',
+    linkAttr: 'href',
+  },
+  // 고양시
+  {
+    name: '고양시',
+    tag: '고양',
+    listUrl: 'https://www.goyang.go.kr/www/www05/www05_1/www05_1_1.jsp',
+    baseUrl: 'https://www.goyang.go.kr',
+    listSelector: 'table tbody tr',
+    titleSelector: 'td a',
+    dateSelector: 'td:nth-child(4)',
+    linkAttr: 'href',
+  },
+  // 성남시
+  {
+    name: '성남시',
+    tag: '성남',
+    listUrl: 'https://www.seongnam.go.kr/city/1000060/30001/bbsList.do',
+    baseUrl: 'https://www.seongnam.go.kr',
+    listSelector: 'table tbody tr',
+    titleSelector: 'td.subject a, td a',
+    dateSelector: 'td:nth-child(4)',
+    linkAttr: 'href',
+  },
+  // 용인시
+  {
+    name: '용인시',
+    tag: '용인',
+    listUrl: 'https://www.yongin.go.kr/home/www/www06/www06_01/www06_01_01.jsp',
+    baseUrl: 'https://www.yongin.go.kr',
+    listSelector: 'table tbody tr',
+    titleSelector: 'td.subject a, td a',
+    dateSelector: 'td:nth-child(4)',
+    linkAttr: 'href',
+  },
+  // 화성시
+  {
+    name: '화성시',
+    tag: '화성',
+    listUrl: 'https://www.hscity.go.kr/www/user/bbs/BD_selectBbsList.do?q_bbsCode=1020',
+    baseUrl: 'https://www.hscity.go.kr',
+    listSelector: 'table tbody tr',
+    titleSelector: 'td.p-subject a',
+    dateSelector: 'td:nth-child(5)',
+    linkPattern: (onclick) => {
+      const match = onclick?.match(/jsView\('(\d+)',\s*'(\d+)'/);
+      if (match) {
+        return `https://www.hscity.go.kr/www/user/bbs/BD_selectBbs.do?q_bbsCode=${match[1]}&q_bbscttSn=${match[2]}`;
+      }
+      return null;
+    },
+  },
+  // 부천시
+  {
+    name: '부천시',
+    tag: '부천',
+    listUrl: 'https://www.bucheon.go.kr/site/program/board/basicboard/list?boardtypeid=24&menuid=148001005002',
+    baseUrl: 'https://www.bucheon.go.kr',
+    listSelector: 'table tbody tr',
+    titleSelector: 'td.subject a, td a',
+    dateSelector: 'td.date, td:nth-child(4)',
+    linkAttr: 'href',
+  },
+  // 안양시
+  {
+    name: '안양시',
+    tag: '안양',
+    listUrl: 'https://www.anyang.go.kr/main/selectBbsNttList.do?bbsNo=198&key=456',
+    baseUrl: 'https://www.anyang.go.kr',
+    listSelector: 'table tbody tr',
+    titleSelector: 'td.subject a, td a',
+    dateSelector: 'td:nth-child(4)',
+    linkAttr: 'href',
+  },
+  // 남양주시
+  {
+    name: '남양주시',
+    tag: '남양주',
+    listUrl: 'https://www.nyj.go.kr/main/1897/5399/bbsList.do',
+    baseUrl: 'https://www.nyj.go.kr',
+    listSelector: 'table tbody tr',
+    titleSelector: 'td.subject a, td a',
+    dateSelector: 'td.date, td:nth-child(4)',
+    linkAttr: 'href',
+  },
+  // 평택시
+  {
+    name: '평택시',
+    tag: '평택',
+    listUrl: 'https://www.pyeongtaek.go.kr/pyeongtaek/bbs/list.do?ptBbsMstrId=2&mId=0401060000',
+    baseUrl: 'https://www.pyeongtaek.go.kr',
+    listSelector: 'table tbody tr',
+    titleSelector: 'td.subject a, td a',
+    dateSelector: 'td:nth-child(4)',
+    linkAttr: 'href',
+  },
+  // 안산시
+  {
+    name: '안산시',
+    tag: '안산',
+    listUrl: 'https://www.ansan.go.kr/www/selectBbsNttList.do?bbsNo=196',
+    baseUrl: 'https://www.ansan.go.kr',
+    listSelector: 'table tbody tr',
+    titleSelector: 'td.subject a, td a',
+    dateSelector: 'td:nth-child(4)',
+    linkAttr: 'href',
+  },
+  // 시흥시
+  {
+    name: '시흥시',
+    tag: '시흥',
+    listUrl: 'https://www.siheung.go.kr/main/selectBbsNttList.do?bbsNo=35',
+    baseUrl: 'https://www.siheung.go.kr',
+    listSelector: 'table tbody tr',
+    titleSelector: 'td.subject a, td a',
+    dateSelector: 'td:nth-child(4)',
+    linkAttr: 'href',
+  },
+  // 의정부시
+  {
+    name: '의정부시',
+    tag: '의정부',
+    listUrl: 'https://www.ui4u.go.kr/kor/selectBbsNttList.do?bbsNo=15',
+    baseUrl: 'https://www.ui4u.go.kr',
+    listSelector: 'table tbody tr',
+    titleSelector: 'td.subject a, td a',
+    dateSelector: 'td:nth-child(4)',
+    linkAttr: 'href',
+  },
+  // 파주시
+  {
+    name: '파주시',
+    tag: '파주',
+    listUrl: 'https://www.paju.go.kr/board/selectBoardList.do?bbsId=BBSMSTR_000000000029&nttCtgrySn=&menuId=',
+    baseUrl: 'https://www.paju.go.kr',
+    listSelector: 'table tbody tr',
+    titleSelector: 'td.subject a, td a',
+    dateSelector: 'td:nth-child(4)',
+    linkAttr: 'href',
+  },
+  // 김포시
+  {
+    name: '김포시',
+    tag: '김포',
+    listUrl: 'https://www.gimpo.go.kr/portal/selectBbsNttList.do?bbsNo=297',
+    baseUrl: 'https://www.gimpo.go.kr',
+    listSelector: 'table tbody tr',
+    titleSelector: 'td.subject a, td a',
+    dateSelector: 'td:nth-child(4)',
+    linkAttr: 'href',
+  },
+  // 광명시
+  {
+    name: '광명시',
+    tag: '광명',
+    listUrl: 'https://www.gm.go.kr/pt/selectBbsNttList.do?bbsNo=1032',
+    baseUrl: 'https://www.gm.go.kr',
+    listSelector: 'table tbody tr',
+    titleSelector: 'td.subject a, td a',
+    dateSelector: 'td:nth-child(4)',
+    linkAttr: 'href',
   },
 ];
 
@@ -74,14 +280,18 @@ async function fetchPage(url) {
 }
 
 // 보도자료 목록에서 기사 추출
-function parseArticleList(html, source) {
+async function parseArticleList(html, source) {
+  // 커스텀 파서가 있으면 사용
+  if (source.customParser) {
+    return await source.customParser(html, source);
+  }
+
   try {
     const $ = cheerio.load(html);
     const articles = [];
 
     const rows = $(source.listSelector);
     if (rows.length === 0) {
-      console.log(`  ! 셀렉터 "${source.listSelector}"로 행을 찾을 수 없음`);
       return [];
     }
 
@@ -90,18 +300,19 @@ function parseArticleList(html, source) {
 
       const $el = $(el);
       const titleEl = $el.find(source.titleSelector);
-      const title = titleEl.text().trim().replace(/\s+/g, ' ');
+      let title = titleEl.text().trim().replace(/\s+/g, ' ');
 
       if (!title || title.length < 5) return;
 
       // onclick에서 URL 추출
       let link = null;
       const onclick = titleEl.attr('onclick');
+      const href = titleEl.attr(source.linkAttr || 'href');
 
       if (onclick && source.linkPattern) {
         link = source.linkPattern(onclick);
-      } else if (titleEl.attr('href') && titleEl.attr('href') !== '#') {
-        link = titleEl.attr('href');
+      } else if (href && href !== '#') {
+        link = href;
         if (!link.startsWith('http')) {
           link = source.baseUrl + (link.startsWith('/') ? '' : '/') + link;
         }
@@ -139,13 +350,14 @@ async function parseArticleDetail(url) {
       '.view_content',
       '.view-body',
       '.bbs_view_content',
-      '.content',
+      '.content_view',
       '.board_content',
       '.bbs_content',
-      '#content',
       '.article_content',
-      'article',
       '.detail_content',
+      '.content',
+      '#content',
+      'article',
     ];
 
     for (const selector of contentSelectors) {
@@ -163,6 +375,7 @@ async function parseArticleDetail(url) {
       '.board_view_content img',
       '.view_content img',
       '.view-body img',
+      '.content_view img',
       '.content img',
       'article img',
       '.bbs_content img',
@@ -173,7 +386,7 @@ async function parseArticleDetail(url) {
       const img = $(selector).first();
       if (img.length) {
         const src = img.attr('src');
-        if (src && !src.includes('icon') && !src.includes('bullet') && !src.includes('btn') && !src.includes('logo')) {
+        if (src && !src.includes('icon') && !src.includes('bullet') && !src.includes('btn') && !src.includes('logo') && !src.includes('bg_')) {
           imageUrl = src;
           if (imageUrl && !imageUrl.startsWith('http')) {
             const urlObj = new URL(url);
@@ -187,7 +400,7 @@ async function parseArticleDetail(url) {
     // og:image 메타태그 확인 (백업)
     if (!imageUrl) {
       const ogImage = $('meta[property="og:image"]').attr('content');
-      if (ogImage && !ogImage.includes('logo')) {
+      if (ogImage && !ogImage.includes('logo') && !ogImage.includes('default')) {
         imageUrl = ogImage;
         if (!imageUrl.startsWith('http')) {
           const urlObj = new URL(url);
@@ -255,7 +468,6 @@ async function uploadImage(recordId, imageUrl) {
     clearTimeout(timeout);
 
     if (!imageResponse.ok) {
-      console.log(`  ! 이미지 다운로드 실패: ${imageResponse.status}`);
       return false;
     }
 
@@ -263,7 +475,6 @@ async function uploadImage(recordId, imageUrl) {
 
     // 너무 작은 이미지 스킵 (아이콘 등)
     if (imageBuffer.byteLength < 5000) {
-      console.log(`  ! 이미지 너무 작음: ${imageBuffer.byteLength} bytes`);
       return false;
     }
 
@@ -284,7 +495,6 @@ async function uploadImage(recordId, imageUrl) {
 
     return uploadResponse.ok;
   } catch (error) {
-    console.log(`  ! 이미지 업로드 실패: ${error.message}`);
     return false;
   }
 }
@@ -323,11 +533,13 @@ function generateSlug() {
 async function main() {
   console.log('===== 경인블루저널 일일 업데이트 (지자체 보도자료) =====');
   console.log(`실행 시간: ${new Date().toLocaleString('ko-KR', { timeZone: 'Asia/Seoul' })}`);
+  console.log(`대상 지자체: ${GOVERNMENT_SOURCES.length}개`);
   console.log('');
 
   let totalAdded = 0;
   let totalWithImage = 0;
   let totalSkipped = 0;
+  let successfulSources = 0;
 
   for (const source of GOVERNMENT_SOURCES) {
     console.log(`[${source.name}] 보도자료 수집 중...`);
@@ -340,19 +552,20 @@ async function main() {
     }
 
     // 기사 목록 파싱
-    const articles = parseArticleList(listHtml, source);
+    const articles = await parseArticleList(listHtml, source);
     console.log(`  - ${articles.length}개 보도자료 발견`);
 
-    for (const article of articles.slice(0, 3)) { // 지자체당 최대 3개
+    if (articles.length > 0) {
+      successfulSources++;
+    }
+
+    for (const article of articles.slice(0, 2)) { // 지자체당 최대 2개
       // 중복 확인
       if (await checkDuplicate(article.title)) {
         console.log(`  - 중복: ${article.title.slice(0, 30)}...`);
         totalSkipped++;
         continue;
       }
-
-      console.log(`  - 처리 중: ${article.title.slice(0, 40)}...`);
-      console.log(`    URL: ${article.link}`);
 
       // 상세 페이지 파싱
       const detail = await parseArticleDetail(article.link);
@@ -380,29 +593,29 @@ async function main() {
 
         // 이미지 업로드
         if (detail?.imageUrl) {
-          console.log(`    이미지 URL: ${detail.imageUrl}`);
           const uploaded = await uploadImage(record.id, detail.imageUrl);
           if (uploaded) {
             totalWithImage++;
-            console.log(`  ✓ 추가 완료 (이미지 O)`);
+            console.log(`  ✓ 추가 (이미지O): ${article.title.slice(0, 35)}...`);
           } else {
-            console.log(`  ✓ 추가 완료 (이미지 X)`);
+            console.log(`  ✓ 추가 (이미지X): ${article.title.slice(0, 35)}...`);
           }
         } else {
-          console.log(`  ✓ 추가 완료 (이미지 없음)`);
+          console.log(`  ✓ 추가 (이미지X): ${article.title.slice(0, 35)}...`);
         }
       }
 
       // 속도 제한
-      await new Promise(r => setTimeout(r, 1500));
+      await new Promise(r => setTimeout(r, 1000));
     }
 
     // 지자체 간 딜레이
-    await new Promise(r => setTimeout(r, 2000));
+    await new Promise(r => setTimeout(r, 1500));
     console.log('');
   }
 
   console.log('===== 업데이트 완료 =====');
+  console.log(`성공한 지자체: ${successfulSources}/${GOVERNMENT_SOURCES.length}개`);
   console.log(`추가: ${totalAdded}개 (이미지 포함: ${totalWithImage}개)`);
   console.log(`중복 스킵: ${totalSkipped}개`);
 }
