@@ -39,15 +39,19 @@ export default function AdminLayout({
     checkAuth()
   }, [checkAuth])
 
+  // 임시 관리자 이메일 목록 (PocketBase에 role 필드 추가 후 제거)
+  const ADMIN_EMAILS = ['sanoramyun8@gmail.com']
+  const isAdmin = user?.role === 'admin' || user?.role === 'editor' || ADMIN_EMAILS.includes(user?.email || '')
+
   useEffect(() => {
     if (!isLoading) {
       if (!isAuthenticated) {
         router.push('/login')
-      } else if (user?.role !== 'admin' && user?.role !== 'editor') {
+      } else if (!isAdmin) {
         router.push('/')
       }
     }
-  }, [isLoading, isAuthenticated, user, router])
+  }, [isLoading, isAuthenticated, isAdmin, router])
 
   if (isLoading) {
     return (
@@ -57,7 +61,7 @@ export default function AdminLayout({
     )
   }
 
-  if (!isAuthenticated || (user?.role !== 'admin' && user?.role !== 'editor')) {
+  if (!isAuthenticated || !isAdmin) {
     return null
   }
 

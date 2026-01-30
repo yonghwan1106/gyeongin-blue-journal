@@ -4,9 +4,15 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { ArrowLeft, Save, Eye, Image as ImageIcon, X } from 'lucide-react'
 import Link from 'next/link'
+import dynamic from 'next/dynamic'
 import { getPb } from '@/lib/pocketbase'
 import { useAuthStore } from '@/store/authStore'
 import type { Category, Author } from '@/types'
+
+const RichTextEditor = dynamic(() => import('@/components/admin/RichTextEditor'), {
+  ssr: false,
+  loading: () => <div className="h-[400px] bg-slate-100 animate-pulse rounded-lg" />,
+})
 
 export default function NewArticlePage() {
   const router = useRouter()
@@ -240,17 +246,11 @@ export default function NewArticlePage() {
           <label className="block text-sm font-medium text-foreground mb-2">
             본문 <span className="text-accent">*</span>
           </label>
-          <textarea
-            value={formData.content}
-            onChange={(e) => setFormData({ ...formData, content: e.target.value })}
-            placeholder="기사 내용을 입력하세요 (HTML 지원)"
-            rows={20}
-            className="w-full px-4 py-3 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary font-mono text-sm"
-            required
+          <RichTextEditor
+            content={formData.content}
+            onChange={(content) => setFormData({ ...formData, content })}
+            placeholder="기사 내용을 입력하세요..."
           />
-          <p className="mt-2 text-sm text-secondary">
-            HTML 태그를 사용할 수 있습니다. (예: &lt;p&gt;, &lt;h2&gt;, &lt;img&gt;, &lt;blockquote&gt;)
-          </p>
         </div>
 
         {/* Meta */}
