@@ -58,7 +58,7 @@ export default function ArticlesPage() {
       }
 
       const options: Record<string, unknown> = {
-        sort: '-published_at,-updated',
+        sort: '-published_at',
         expand: 'category,author',
       }
 
