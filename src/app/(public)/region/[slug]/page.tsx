@@ -62,9 +62,11 @@ export default function RegionPage({ params }: PageProps) {
 
     try {
       setLoading(true)
+      // 지역명에서 '시', '군', '도' 제거하여 검색 (예: "용인시" -> "용인")
+      const searchName = region.name.replace(/(시|군|도)$/, '')
       // tags 필드에서 지역명으로 필터링
       const records = await getPb().collection('articles').getList<Article>(currentPage, perPage, {
-        filter: `status = "published" && tags ~ "${region.name}"`,
+        filter: `status = "published" && tags ~ "${searchName}"`,
         sort: '-published_at',
         expand: 'category,author',
       })
