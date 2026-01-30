@@ -91,6 +91,12 @@ export default function Header() {
                 {category.name}
               </Link>
             ))}
+            <Link
+              href="/region"
+              className="text-foreground hover:text-primary font-medium transition-colors flex items-center gap-1"
+            >
+              <span>지역</span>
+            </Link>
           </nav>
 
           {/* Actions */}
@@ -165,6 +171,13 @@ export default function Header() {
                 {category.name}
               </Link>
             ))}
+            <Link
+              href="/region"
+              className="block py-2 text-foreground hover:text-primary font-medium"
+              onClick={() => setIsMenuOpen(false)}
+            >
+              지역
+            </Link>
             {isAuthenticated && (
               <>
                 <hr className="my-2 border-border" />
