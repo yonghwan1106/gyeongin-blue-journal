@@ -57,7 +57,7 @@ export const useAuthStore = create<AuthState>()(
       },
 
       logout: () => {
-        pb.authStore.clear()
+        getPb().authStore.clear()
         set({
           user: null,
           token: null,
@@ -66,10 +66,10 @@ export const useAuthStore = create<AuthState>()(
       },
 
       checkAuth: () => {
-        if (pb.authStore.isValid) {
+        if (getPb().authStore.isValid) {
           set({
-            user: pb.authStore.record as unknown as User,
-            token: pb.authStore.token,
+            user: getPb().authStore.record as unknown as User,
+            token: getPb().authStore.token,
             isAuthenticated: true,
             isLoading: false,
           })

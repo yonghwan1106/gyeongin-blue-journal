@@ -5,6 +5,7 @@ export const PB_URL = process.env.NEXT_PUBLIC_POCKETBASE_URL || 'http://158.247.
 
 // 서버용 PocketBase 인스턴스
 const serverPb = new PocketBase(PB_URL)
+serverPb.autoCancellation(false) // 자동 취소 비활성화
 
 // 클라이언트용 PocketBase 인스턴스 (lazy initialization)
 let clientPb: PocketBase | null = null
@@ -17,6 +18,7 @@ export function getPb(): PocketBase {
     // 클라이언트: 프록시 경로 사용
     if (!clientPb) {
       clientPb = new PocketBase('/pb')
+      clientPb.autoCancellation(false) // 자동 취소 비활성화
     }
     return clientPb
   }
