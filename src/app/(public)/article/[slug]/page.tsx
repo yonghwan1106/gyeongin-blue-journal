@@ -4,12 +4,15 @@ import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { format } from 'date-fns'
 import { ko } from 'date-fns/locale'
-import { Clock, Eye, Share2, Bookmark, Facebook, Twitter, Link as LinkIcon } from 'lucide-react'
+import { Clock, Eye } from 'lucide-react'
 import { getPb, getFileUrl } from '@/lib/pocketbase'
+import { sanitizeSlug } from '@/lib/validation'
 import type { Article } from '@/types'
 import CommentSection from '@/components/comment/CommentSection'
 import RelatedArticles from '@/components/article/RelatedArticles'
 import Sidebar from '@/components/layout/Sidebar'
+import ShareButtons from '@/components/article/ShareButtons'
+import ArticleContent from '@/components/article/ArticleContent'
 
 interface PageProps {
   params: Promise<{ slug: string }>
@@ -17,8 +20,11 @@ interface PageProps {
 
 async function getArticle(slug: string): Promise<Article | null> {
   try {
+    const safeSlug = sanitizeSlug(slug)
+    if (!safeSlug) return null
+
     const records = await getPb().collection('articles').getList<Article>(1, 1, {
-      filter: `slug = "${slug}" && status = "published"`,
+      filter: `slug = "${safeSlug}" && status = "published"`,
       expand: 'category,author',
     })
     if (records.items.length === 0) return null
@@ -154,10 +160,7 @@ export default async function ArticlePage({ params }: PageProps) {
           </p>
 
           {/* Content */}
-          <div
-            className="article-content"
-            dangerouslySetInnerHTML={{ __html: article.content }}
-          />
+          <ArticleContent content={article.content} />
 
           {/* Tags */}
           {article.tags && article.tags.length > 0 && (
@@ -175,29 +178,7 @@ export default async function ArticlePage({ params }: PageProps) {
           )}
 
           {/* Share Buttons */}
-          <div className="flex items-center gap-4 mt-8 pt-8 border-t border-border">
-            <span className="font-medium text-foreground">공유하기</span>
-            <div className="flex gap-2">
-              <button
-                className="p-2 bg-[#1877F2] text-white rounded-lg hover:opacity-90 transition-opacity"
-                title="Facebook에 공유"
-              >
-                <Facebook className="w-5 h-5" />
-              </button>
-              <button
-                className="p-2 bg-black text-white rounded-lg hover:opacity-90 transition-opacity"
-                title="X에 공유"
-              >
-                <Twitter className="w-5 h-5" />
-              </button>
-              <button
-                className="p-2 bg-secondary text-white rounded-lg hover:opacity-90 transition-opacity"
-                title="링크 복사"
-              >
-                <LinkIcon className="w-5 h-5" />
-              </button>
-            </div>
-          </div>
+          <ShareButtons title={article.title} slug={article.slug} />
 
           {/* Comments */}
           <section className="mt-12">

@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import './globals.css'
 import Header from '@/components/layout/Header'
 import Footer from '@/components/layout/Footer'
+import ScrollToTop from '@/components/common/ScrollToTop'
 
 export const metadata: Metadata = {
   title: '경인블루저널 - 경인 지역 뉴스',
@@ -32,11 +33,18 @@ export default function RootLayout({
         />
       </head>
       <body className="min-h-screen flex flex-col">
+        <a
+          href="#main-content"
+          className="sr-only focus:not-sr-only focus:absolute focus:top-0 focus:left-0 focus:z-[100] focus:bg-primary focus:text-white focus:px-4 focus:py-2"
+        >
+          본문 바로가기
+        </a>
         <Header />
-        <main className="flex-1">
+        <main id="main-content" className="flex-1">
           {children}
         </main>
         <Footer />
+        <ScrollToTop />
       </body>
     </html>
   )

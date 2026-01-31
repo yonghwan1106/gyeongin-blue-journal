@@ -26,15 +26,20 @@ import {
   Heading2,
   Heading3,
   Minus,
+  Upload,
 } from 'lucide-react'
+import { useRef, useState } from 'react'
 
 interface RichTextEditorProps {
   content: string
   onChange: (content: string) => void
   placeholder?: string
+  onImageUpload?: (file: File) => Promise<string | null>
 }
 
-export default function RichTextEditor({ content, onChange, placeholder }: RichTextEditorProps) {
+export default function RichTextEditor({ content, onChange, placeholder, onImageUpload }: RichTextEditorProps) {
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  const [isUploading, setIsUploading] = useState(false)
   const editor = useEditor({
     extensions: [
       StarterKit.configure({
@@ -76,10 +81,51 @@ export default function RichTextEditor({ content, onChange, placeholder }: RichT
     return null
   }
 
-  const addImage = () => {
+  const addImageByUrl = () => {
     const url = window.prompt('이미지 URL을 입력하세요:')
     if (url) {
       editor.chain().focus().setImage({ src: url }).run()
+    }
+  }
+
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file || !onImageUpload) return
+
+    // 이미지 파일 타입 검증
+    if (!file.type.startsWith('image/')) {
+      alert('이미지 파일만 업로드할 수 있습니다.')
+      return
+    }
+
+    // 파일 크기 제한 (5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      alert('파일 크기는 5MB 이하여야 합니다.')
+      return
+    }
+
+    setIsUploading(true)
+    try {
+      const url = await onImageUpload(file)
+      if (url) {
+        editor.chain().focus().setImage({ src: url }).run()
+      }
+    } catch (error) {
+      console.error('Failed to upload image:', error)
+      alert('이미지 업로드에 실패했습니다.')
+    } finally {
+      setIsUploading(false)
+      if (fileInputRef.current) {
+        fileInputRef.current.value = ''
+      }
+    }
+  }
+
+  const addImage = () => {
+    if (onImageUpload) {
+      fileInputRef.current?.click()
+    } else {
+      addImageByUrl()
     }
   }
 
@@ -234,9 +280,26 @@ export default function RichTextEditor({ content, onChange, placeholder }: RichT
         <ToolbarButton onClick={addLink} isActive={editor.isActive('link')} title="링크 삽입">
           <LinkIcon className="w-4 h-4" />
         </ToolbarButton>
-        <ToolbarButton onClick={addImage} title="이미지 삽입">
-          <ImageIcon className="w-4 h-4" />
+        <ToolbarButton onClick={addImage} title={onImageUpload ? "이미지 업로드" : "이미지 URL 삽입"}>
+          {isUploading ? (
+            <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+          ) : (
+            <ImageIcon className="w-4 h-4" />
+          )}
         </ToolbarButton>
+        {onImageUpload && (
+          <ToolbarButton onClick={addImageByUrl} title="URL로 이미지 삽입">
+            <Upload className="w-4 h-4" />
+          </ToolbarButton>
+        )}
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*"
+          onChange={handleFileSelect}
+          className="hidden"
+          aria-label="이미지 파일 선택"
+        />
 
         <div className="w-px h-6 bg-border mx-1" />
 

@@ -1,7 +1,8 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { getPb } from '@/lib/pocketbase'
+import { sanitizeSlug } from '@/lib/validation'
 import ArticleCard from './ArticleCard'
 import type { Article } from '@/types'
 
@@ -21,16 +22,15 @@ export default function ArticleList({
   const [articles, setArticles] = useState<Article[]>([])
   const [loading, setLoading] = useState(true)
 
-  useEffect(() => {
-    fetchArticles()
-  }, [categorySlug])
-
-  const fetchArticles = async () => {
+  const fetchArticles = useCallback(async () => {
     try {
       setLoading(true)
       let filter = 'status = "published"'
       if (categorySlug) {
-        filter += ` && category.slug = "${categorySlug}"`
+        const safeSlug = sanitizeSlug(categorySlug)
+        if (safeSlug) {
+          filter += ` && category.slug = "${safeSlug}"`
+        }
       }
 
       const records = await getPb().collection('articles').getList<Article>(1, limit, {
@@ -44,7 +44,11 @@ export default function ArticleList({
     } finally {
       setLoading(false)
     }
-  }
+  }, [categorySlug, limit])
+
+  useEffect(() => {
+    fetchArticles()
+  }, [fetchArticles])
 
   if (loading) {
     return (

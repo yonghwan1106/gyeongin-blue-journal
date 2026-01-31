@@ -1,9 +1,9 @@
 'use client'
 
 import Link from 'next/link'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { usePathname } from 'next/navigation'
-import { Search, Menu, X, User, LogOut, Bookmark } from 'lucide-react'
+import { Search, Menu, X, LogOut, Bookmark } from 'lucide-react'
 import { useAuthStore } from '@/store/authStore'
 import { getPb } from '@/lib/pocketbase'
 import type { Category } from '@/types'
@@ -21,12 +21,7 @@ export default function Header() {
   const [categories, setCategories] = useState<Category[]>([])
   const { user, isAuthenticated, logout, checkAuth } = useAuthStore()
 
-  useEffect(() => {
-    checkAuth()
-    fetchCategories()
-  }, [checkAuth])
-
-  const fetchCategories = async () => {
+  const fetchCategories = useCallback(async () => {
     try {
       const records = await getPb().collection('categories').getList<Category>(1, 10, {
         sort: 'order',
@@ -35,7 +30,12 @@ export default function Header() {
     } catch (error) {
       console.error('Failed to fetch categories:', error)
     }
-  }
+  }, [])
+
+  useEffect(() => {
+    checkAuth()
+    fetchCategories()
+  }, [checkAuth, fetchCategories])
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault()

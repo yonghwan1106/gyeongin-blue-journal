@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import { getPb } from '@/lib/pocketbase'
+import { mapRecordToUser } from '@/lib/typeMappers'
 import type { User } from '@/types'
 
 interface AuthState {
@@ -23,37 +24,29 @@ export const useAuthStore = create<AuthState>()(
       isLoading: true,
 
       login: async (email: string, password: string) => {
-        try {
-          const authData = await getPb().collection('users').authWithPassword(email, password)
-          set({
-            user: authData.record as unknown as User,
-            token: authData.token,
-            isAuthenticated: true,
-          })
-        } catch (error) {
-          throw error
-        }
+        const authData = await getPb().collection('users').authWithPassword(email, password)
+        set({
+          user: mapRecordToUser(authData.record),
+          token: authData.token,
+          isAuthenticated: true,
+        })
       },
 
       register: async (email: string, password: string, name: string) => {
-        try {
-          await getPb().collection('users').create({
-            email,
-            password,
-            passwordConfirm: password,
-            name,
-            role: 'reader',
-          })
-          // Auto login after registration
-          const authData = await getPb().collection('users').authWithPassword(email, password)
-          set({
-            user: authData.record as unknown as User,
-            token: authData.token,
-            isAuthenticated: true,
-          })
-        } catch (error) {
-          throw error
-        }
+        await getPb().collection('users').create({
+          email,
+          password,
+          passwordConfirm: password,
+          name,
+          role: 'reader',
+        })
+        // Auto login after registration
+        const authData = await getPb().collection('users').authWithPassword(email, password)
+        set({
+          user: mapRecordToUser(authData.record),
+          token: authData.token,
+          isAuthenticated: true,
+        })
       },
 
       logout: () => {
@@ -68,7 +61,7 @@ export const useAuthStore = create<AuthState>()(
       checkAuth: () => {
         if (getPb().authStore.isValid) {
           set({
-            user: getPb().authStore.record as unknown as User,
+            user: mapRecordToUser(getPb().authStore.record),
             token: getPb().authStore.token,
             isAuthenticated: true,
             isLoading: false,

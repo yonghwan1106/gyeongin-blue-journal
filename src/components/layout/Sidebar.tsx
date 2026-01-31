@@ -2,21 +2,21 @@
 
 import Link from 'next/link'
 import Image from 'next/image'
-import { TrendingUp, Eye } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { TrendingUp, Eye, Loader2, CheckCircle, XCircle } from 'lucide-react'
+import { useEffect, useState, useCallback } from 'react'
 import { getPb, getFileUrl } from '@/lib/pocketbase'
+import { isValidEmail } from '@/lib/validation'
+import { handleError } from '@/lib/errorHandler'
 import type { Article, Advertisement } from '@/types'
 
 export default function Sidebar() {
   const [popularArticles, setPopularArticles] = useState<Article[]>([])
   const [ads, setAds] = useState<Advertisement[]>([])
+  const [newsletterEmail, setNewsletterEmail] = useState('')
+  const [newsletterStatus, setNewsletterStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle')
+  const [newsletterMessage, setNewsletterMessage] = useState('')
 
-  useEffect(() => {
-    fetchPopularArticles()
-    fetchAds()
-  }, [])
-
-  const fetchPopularArticles = async () => {
+  const fetchPopularArticles = useCallback(async () => {
     try {
       const records = await getPb().collection('articles').getList<Article>(1, 10, {
         filter: 'status = "published"',
@@ -27,9 +27,9 @@ export default function Sidebar() {
     } catch (error) {
       console.error('Failed to fetch popular articles:', error)
     }
-  }
+  }, [])
 
-  const fetchAds = async () => {
+  const fetchAds = useCallback(async () => {
     try {
       const now = new Date().toISOString()
       const records = await getPb().collection('advertisements').getList<Advertisement>(1, 5, {
@@ -38,6 +38,46 @@ export default function Sidebar() {
       setAds(records.items)
     } catch (error) {
       console.error('Failed to fetch ads:', error)
+    }
+  }, [])
+
+  useEffect(() => {
+    fetchPopularArticles()
+    fetchAds()
+  }, [fetchPopularArticles, fetchAds])
+
+  const handleNewsletterSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+
+    if (!isValidEmail(newsletterEmail)) {
+      setNewsletterStatus('error')
+      setNewsletterMessage('올바른 이메일 주소를 입력해주세요.')
+      return
+    }
+
+    setNewsletterStatus('loading')
+
+    try {
+      await getPb().collection('newsletter_subscribers').create({
+        email: newsletterEmail,
+        is_active: true,
+        subscribed_at: new Date().toISOString(),
+      })
+      setNewsletterStatus('success')
+      setNewsletterMessage('구독 신청이 완료되었습니다!')
+      setNewsletterEmail('')
+      setTimeout(() => {
+        setNewsletterStatus('idle')
+        setNewsletterMessage('')
+      }, 3000)
+    } catch (error) {
+      setNewsletterStatus('error')
+      const errorMessage = handleError(error, 'Newsletter')
+      if (errorMessage.includes('이미 존재')) {
+        setNewsletterMessage('이미 구독 중인 이메일입니다.')
+      } else {
+        setNewsletterMessage('구독 신청에 실패했습니다. 다시 시도해주세요.')
+      }
     }
   }
 
@@ -128,18 +168,42 @@ export default function Sidebar() {
         <p className="text-sm text-blue-100 mb-4">
           매일 아침, 주요 뉴스를 이메일로 받아보세요.
         </p>
-        <form className="space-y-2">
+        <form onSubmit={handleNewsletterSubmit} className="space-y-2">
           <input
             type="email"
+            value={newsletterEmail}
+            onChange={(e) => setNewsletterEmail(e.target.value)}
             placeholder="이메일 주소"
             className="w-full px-4 py-2 rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-white"
+            disabled={newsletterStatus === 'loading'}
+            aria-label="뉴스레터 구독 이메일"
           />
           <button
             type="submit"
-            className="w-full bg-white text-primary font-bold py-2 rounded-lg hover:bg-blue-50 transition-colors"
+            disabled={newsletterStatus === 'loading'}
+            className="w-full bg-white text-primary font-bold py-2 rounded-lg hover:bg-blue-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
           >
-            구독하기
+            {newsletterStatus === 'loading' ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                처리 중...
+              </>
+            ) : (
+              '구독하기'
+            )}
           </button>
+          {newsletterMessage && (
+            <div className={`flex items-center gap-2 text-sm ${
+              newsletterStatus === 'success' ? 'text-green-200' : 'text-red-200'
+            }`}>
+              {newsletterStatus === 'success' ? (
+                <CheckCircle className="w-4 h-4" />
+              ) : (
+                <XCircle className="w-4 h-4" />
+              )}
+              {newsletterMessage}
+            </div>
+          )}
         </form>
       </div>
     </aside>

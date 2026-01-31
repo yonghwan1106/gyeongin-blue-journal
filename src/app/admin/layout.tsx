@@ -39,9 +39,8 @@ export default function AdminLayout({
     checkAuth()
   }, [checkAuth])
 
-  // 임시 관리자 이메일 목록 (PocketBase에 role 필드 추가 후 제거)
-  const ADMIN_EMAILS = ['sanoramyun8@gmail.com']
-  const isAdmin = user?.role === 'admin' || user?.role === 'editor' || ADMIN_EMAILS.includes(user?.email || '')
+  // role 필드만으로 권한 검증
+  const isAdmin = user?.role === 'admin' || user?.role === 'editor'
 
   useEffect(() => {
     if (!isLoading) {

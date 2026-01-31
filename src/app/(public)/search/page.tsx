@@ -1,9 +1,10 @@
 'use client'
 
-import { useEffect, useState, Suspense } from 'react'
+import { useEffect, useState, Suspense, useCallback } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { Search } from 'lucide-react'
 import { getPb } from '@/lib/pocketbase'
+import { sanitizeSearchQuery } from '@/lib/validation'
 import ArticleCard from '@/components/article/ArticleCard'
 import Pagination from '@/components/common/Pagination'
 import Sidebar from '@/components/layout/Sidebar'
@@ -20,28 +21,18 @@ function SearchContent() {
   const [searchInput, setSearchInput] = useState(query)
   const perPage = 12
 
-  useEffect(() => {
-    setSearchInput(query)
-    setCurrentPage(1)
-    if (query) {
-      fetchArticles()
-    } else {
+  const fetchArticles = useCallback(async () => {
+    const safeQuery = sanitizeSearchQuery(query)
+    if (!safeQuery) {
       setArticles([])
       setLoading(false)
+      return
     }
-  }, [query])
 
-  useEffect(() => {
-    if (query) {
-      fetchArticles()
-    }
-  }, [currentPage])
-
-  const fetchArticles = async () => {
     try {
       setLoading(true)
       const records = await getPb().collection('articles').getList<Article>(currentPage, perPage, {
-        filter: `status = "published" && (title ~ "${query}" || summary ~ "${query}" || content ~ "${query}")`,
+        filter: `status = "published" && (title ~ "${safeQuery}" || summary ~ "${safeQuery}" || content ~ "${safeQuery}")`,
         sort: '-published_at',
         expand: 'category,author',
       })
@@ -53,7 +44,24 @@ function SearchContent() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [query, currentPage])
+
+  useEffect(() => {
+    setSearchInput(query)
+    setCurrentPage(1)
+    if (query) {
+      fetchArticles()
+    } else {
+      setArticles([])
+      setLoading(false)
+    }
+  }, [query, fetchArticles])
+
+  useEffect(() => {
+    if (query) {
+      fetchArticles()
+    }
+  }, [currentPage, query, fetchArticles])
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault()

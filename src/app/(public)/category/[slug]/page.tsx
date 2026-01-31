@@ -1,8 +1,9 @@
 'use client'
 
-import { useEffect, useState, use } from 'react'
+import { useEffect, useState, use, useCallback } from 'react'
 import { notFound } from 'next/navigation'
 import { getPb } from '@/lib/pocketbase'
+import { sanitizeSlug } from '@/lib/validation'
 import ArticleCard from '@/components/article/ArticleCard'
 import Pagination from '@/components/common/Pagination'
 import Sidebar from '@/components/layout/Sidebar'
@@ -21,20 +22,15 @@ export default function CategoryPage({ params }: PageProps) {
   const [loading, setLoading] = useState(true)
   const perPage = 12
 
-  useEffect(() => {
-    fetchCategory()
-  }, [slug])
-
-  useEffect(() => {
-    if (category) {
-      fetchArticles()
-    }
-  }, [category, currentPage])
-
-  const fetchCategory = async () => {
+  const fetchCategory = useCallback(async () => {
     try {
+      const safeSlug = sanitizeSlug(slug)
+      if (!safeSlug) {
+        notFound()
+        return
+      }
       const records = await getPb().collection('categories').getList<Category>(1, 1, {
-        filter: `slug = "${slug}"`,
+        filter: `slug = "${safeSlug}"`,
       })
       if (records.items.length === 0) {
         notFound()
@@ -45,9 +41,9 @@ export default function CategoryPage({ params }: PageProps) {
       console.error('Failed to fetch category:', error)
       notFound()
     }
-  }
+  }, [slug])
 
-  const fetchArticles = async () => {
+  const fetchArticles = useCallback(async () => {
     if (!category) return
 
     try {
@@ -64,7 +60,17 @@ export default function CategoryPage({ params }: PageProps) {
     } finally {
       setLoading(false)
     }
-  }
+  }, [category, currentPage])
+
+  useEffect(() => {
+    fetchCategory()
+  }, [fetchCategory])
+
+  useEffect(() => {
+    if (category) {
+      fetchArticles()
+    }
+  }, [category, fetchArticles])
 
   if (!category) {
     return (
