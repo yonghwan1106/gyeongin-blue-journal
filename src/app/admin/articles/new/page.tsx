@@ -2,11 +2,12 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { ArrowLeft, Save, Eye, Image as ImageIcon, X } from 'lucide-react'
+import { ArrowLeft, Save, Eye, Image as ImageIcon, X, Loader2 } from 'lucide-react'
 import Link from 'next/link'
 import dynamic from 'next/dynamic'
 import { getPb } from '@/lib/pocketbase'
 import { useAuthStore } from '@/store/authStore'
+import { compressThumbnail } from '@/lib/imageCompressor'
 import type { Category, Author } from '@/types'
 
 const RichTextEditor = dynamic(() => import('@/components/admin/RichTextEditor'), {
@@ -35,6 +36,7 @@ export default function NewArticlePage() {
     is_breaking: false,
   })
   const [thumbnailFile, setThumbnailFile] = useState<File | null>(null)
+  const [compressing, setCompressing] = useState(false)
 
   useEffect(() => {
     fetchData()
@@ -71,15 +73,29 @@ export default function NewArticlePage() {
     })
   }
 
-  const handleThumbnailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleThumbnailChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (file) {
-      setThumbnailFile(file)
-      const reader = new FileReader()
-      reader.onloadend = () => {
-        setThumbnailPreview(reader.result as string)
+      setCompressing(true)
+      try {
+        const compressedFile = await compressThumbnail(file)
+        setThumbnailFile(compressedFile)
+        const reader = new FileReader()
+        reader.onloadend = () => {
+          setThumbnailPreview(reader.result as string)
+        }
+        reader.readAsDataURL(compressedFile)
+      } catch (error) {
+        console.error('이미지 압축 실패:', error)
+        setThumbnailFile(file)
+        const reader = new FileReader()
+        reader.onloadend = () => {
+          setThumbnailPreview(reader.result as string)
+        }
+        reader.readAsDataURL(file)
+      } finally {
+        setCompressing(false)
       }
-      reader.readAsDataURL(file)
     }
   }
 
@@ -194,7 +210,12 @@ export default function NewArticlePage() {
           <label className="block text-sm font-medium text-foreground mb-2">
             대표 이미지
           </label>
-          {thumbnailPreview ? (
+          {compressing ? (
+            <div className="flex flex-col items-center justify-center aspect-video border-2 border-dashed border-border rounded-lg bg-slate-50">
+              <Loader2 className="w-12 h-12 text-primary mb-2 animate-spin" />
+              <span className="text-secondary">이미지 최적화 중...</span>
+            </div>
+          ) : thumbnailPreview ? (
             <div className="relative aspect-video rounded-lg overflow-hidden bg-slate-100">
               <img
                 src={thumbnailPreview}
@@ -213,6 +234,7 @@ export default function NewArticlePage() {
             <label className="flex flex-col items-center justify-center aspect-video border-2 border-dashed border-border rounded-lg cursor-pointer hover:bg-slate-50 transition-colors">
               <ImageIcon className="w-12 h-12 text-secondary mb-2" />
               <span className="text-secondary">이미지를 업로드하세요</span>
+              <span className="text-xs text-secondary mt-1">자동으로 최적화됩니다 (최대 200KB)</span>
               <input
                 type="file"
                 accept="image/*"
