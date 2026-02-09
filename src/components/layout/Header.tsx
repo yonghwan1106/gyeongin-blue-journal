@@ -104,6 +104,12 @@ export default function Header() {
             >
               <span>지역</span>
             </Link>
+            <Link
+              href="/foodbank"
+              className="text-foreground hover:text-primary font-medium transition-colors"
+            >
+              푸드뱅크
+            </Link>
           </nav>
 
           {/* Actions */}
@@ -184,6 +190,13 @@ export default function Header() {
               onClick={() => setIsMenuOpen(false)}
             >
               지역
+            </Link>
+            <Link
+              href="/foodbank"
+              className="block py-2 text-foreground hover:text-primary font-medium"
+              onClick={() => setIsMenuOpen(false)}
+            >
+              푸드뱅크
             </Link>
             {isAuthenticated && (
               <>

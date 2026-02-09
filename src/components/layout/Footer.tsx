@@ -96,6 +96,9 @@ export default function Footer() {
               <Link href="/terms" className="hover:text-white transition-colors">
                 이용약관
               </Link>
+              <Link href="/foodbank" className="hover:text-white transition-colors">
+                푸드뱅크
+              </Link>
               <Link href="/contact" className="hover:text-white transition-colors">
                 광고문의
               </Link>
