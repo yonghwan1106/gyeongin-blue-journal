@@ -865,15 +865,29 @@ async function processArticle(article, source, browser = null) {
     published_at: new Date().toISOString(),
   };
 
+  // 이미지가 없으면 기사 발행하지 않음
+  if (!detail?.imageUrl) {
+    console.log(`  - 이미지없음 스킵: ${cleanTitle.slice(0, 35)}...`);
+    return { added: false, skipped: true };
+  }
+
   const record = await createArticle(articleData);
 
   if (record) {
-    let hasImage = false;
-    if (detail?.imageUrl) {
-      hasImage = await uploadImage(record.id, detail.imageUrl);
+    const hasImage = await uploadImage(record.id, detail.imageUrl);
+    if (!hasImage) {
+      // 이미지 업로드 실패 시 기사 삭제
+      try {
+        const headers = AUTH_TOKEN ? { 'Authorization': AUTH_TOKEN } : {};
+        await fetch(`${POCKETBASE_URL}/api/collections/articles/records/${record.id}`, {
+          method: 'DELETE', headers,
+        });
+      } catch {}
+      console.log(`  - 이미지업로드 실패 삭제: ${cleanTitle.slice(0, 35)}...`);
+      return { added: false, skipped: true };
     }
-    console.log(`  ✓ 추가 ${hasImage ? '(이미지O)' : '(이미지X)'}: ${article.title.slice(0, 35)}...`);
-    return { added: true, hasImage, skipped: false };
+    console.log(`  ✓ 추가 (이미지O): ${cleanTitle.slice(0, 35)}...`);
+    return { added: true, hasImage: true, skipped: false };
   }
 
   return { added: false, skipped: false };
