@@ -740,22 +740,50 @@ function sanitizeContent(html) {
     .trim();
 }
 
-// 제목 정제 - 날짜, 조회수, 부가 텍스트 제거
+// 제목 정제 - 날짜, 조회수, 부가 텍스트 제거 + 제목/설명 분리
 function sanitizeTitle(title) {
   if (!title) return '';
-  return title
+  let clean = title
     // '새글' 태그 제거
     .replace(/^새글\s*/g, '')
-    // 날짜 패턴 제거 (2026.04.03, 2026-04-03 등)
-    .replace(/\s*\d{4}[.\-/]\d{1,2}[.\-/]\d{1,2}\s*/g, ' ')
+    // 날짜 패턴 제거 (2026.04.03, 2026-04-03, 26.3.15.~3.21. 등)
+    .replace(/\s*\d{2,4}[.\-/]\d{1,2}[.\-/][\d~.\-/]+\s*/g, ' ')
     // 조회수 제거 (조회 : 123)
     .replace(/\s*조회\s*:?\s*\d+\s*/g, '')
     // 첨부파일 텍스트 제거
     .replace(/첨부파일/g, '')
     // 연속 공백 정리
     .replace(/\s+/g, ' ')
-    .trim()
-    .slice(0, 100); // 100자 제한
+    .trim();
+
+  // 제목+설명 이어붙기 감지 (공백 없이 이어진 경우)
+  // 패턴1: 한국어 명사 바로 뒤에 한국어가 공백 없이 이어지는 경우
+  const cutPatterns = [
+    // "안내XXX에서/는/이" - 안내 뒤 주어 시작
+    /^(.{10,}?(?:안내|공고|모집|알림|실시|개최|추진|발표|시행|선정))(?=[가-힣]{2,}(?:시|군|구|청|원|소|과|센터|재단|부|에서|는|이|가|을|를))/,
+    // ")2026" 또는 ")제" - 괄호 닫힌 후 설명 시작
+    /^(.{10,}?\))\d{4}/,
+    // "보고서2025" - 보고서 뒤 연도
+    /^(.{10,}?(?:보고서|소식지|결과물|계획서|지침서))\d{4}/,
+    // 같은 제목이 공백 없이 반복되는 경우 (첫 번째만)
+    /^(.{15,50}?)\1/,
+  ];
+  for (const pattern of cutPatterns) {
+    const match = clean.match(pattern);
+    if (match && match[1].length >= 10) {
+      clean = match[1];
+      break;
+    }
+  }
+
+  // 최대 70자, 단어 경계에서 자르기
+  if (clean.length > 70) {
+    const truncated = clean.slice(0, 70);
+    const lastSpace = truncated.lastIndexOf(' ');
+    clean = lastSpace > 30 ? truncated.slice(0, lastSpace) : truncated;
+  }
+
+  return clean;
 }
 
 // 요약 정제 - HTML, JS 코드, 불필요한 텍스트 제거
