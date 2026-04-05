@@ -405,7 +405,7 @@ async function scrapeWithPlaywright(browser, source) {
           // 네비게이션/메뉴 텍스트 제외
           if (/^(이전|다음|처음|마지막|목록|닫기|더보기|로그인|회원가입)$/.test(title)) continue;
 
-          const link = href.startsWith('http') ? href : source.baseUrl + (href.startsWith('/') ? '' : '/') + href;
+          const link = href.startsWith('http') ? href : new URL(href, source.listUrl).href;
           articles.push({ title: title.slice(0, 200), link });
           if (articles.length >= 5) break;
         } catch (e) {
@@ -437,7 +437,7 @@ async function scrapeWithPlaywright(browser, source) {
 
         let link = null;
         if (href && href !== '#' && !href.startsWith('javascript')) {
-          link = href.startsWith('http') ? href : source.baseUrl + (href.startsWith('/') ? '' : '/') + href;
+          link = href.startsWith('http') ? href : new URL(href, source.listUrl).href;
         } else if (onclick) {
           // onclick에서 URL 추출 시도 (다양한 패턴)
           const urlMatch = onclick.match(/['"]([^'"]*(?:\.do|\.jsp|\.html|view|detail)[^'"]*)['"]/);
