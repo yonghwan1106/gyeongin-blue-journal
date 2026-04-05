@@ -688,7 +688,13 @@ async function uploadImage(recordId, imageUrl) {
 
 async function checkDuplicate(title) {
   try {
-    const cleanTitle = title.replace(/['"]/g, '').slice(0, 30);
+    // 제목 정제 후 검색 (특수문자 제거로 PocketBase 필터 오류 방지)
+    const cleanTitle = sanitizeTitle(title)
+      .replace(/['"(),\[\]{}<>~!@#$%^&*+=|\\/:;?]/g, '') // PB 필터 깨뜨리는 특수문자 제거
+      .replace(/\s+/g, ' ')
+      .trim()
+      .slice(0, 20); // 20자로 축소 (더 관대한 매칭)
+    if (cleanTitle.length < 5) return false;
     const response = await fetch(
       `${POCKETBASE_URL}/api/collections/articles/records?filter=(title~'${encodeURIComponent(cleanTitle)}')&perPage=1`
     );
@@ -752,6 +758,20 @@ function sanitizeTitle(title) {
     .slice(0, 100); // 100자 제한
 }
 
+// 요약 정제 - HTML, JS 코드, 불필요한 텍스트 제거
+function sanitizeSummary(summary) {
+  if (!summary) return '';
+  return summary
+    .replace(/<[^>]*>/g, '')           // HTML 태그 제거
+    .replace(/var\s+\w+\s*=\s*\{[^}]*\}/g, '') // JS 변수 선언 제거
+    .replace(/\{[^}]*\}/g, '')         // 중괄호 블록 제거
+    .replace(/공지사항|대표\s*홈|오산소식/g, '') // 네비게이션 텍스트 제거
+    .replace(/loginId|apiKey|snsProps/g, '') // JS 변수명 제거
+    .replace(/\s+/g, ' ')
+    .trim()
+    .slice(0, 150) || '';
+}
+
 function generateSlug() {
   return `news-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`;
 }
@@ -806,7 +826,7 @@ async function processArticle(article, source, browser = null) {
   const articleData = {
     title: cleanTitle,
     slug: generateSlug(),
-    summary: detail?.summary?.replace(/\s+/g, ' ').trim().slice(0, 150) || cleanTitle.slice(0, 100),
+    summary: sanitizeSummary(detail?.summary) || cleanTitle.slice(0, 100),
     content: cleanContent || `<p>${cleanTitle}</p><p><a href="${article.link}" target="_blank">원문 보기</a></p>`,
     category: categorize(article.title),
     status: 'published',
