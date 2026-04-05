@@ -475,11 +475,26 @@ async function getArticleDetailWithPlaywright(browser, url) {
     await page.goto(url, { waitUntil: 'networkidle', timeout: 20000 });
     await page.waitForTimeout(1500);
 
-    // 본문 추출
+    // 본문 추출 - 한국 정부 CMS 공통 패턴 + 사이트별 셀렉터
     const contentSelectors = [
+      // 정부 CMS 공통
       '.view_content', '.board_view_content', '.bbs_content',
       '.content_view', '.article_content', '.detail_content',
-      '.view-body', '#content', 'article',
+      '.view-body', '.view_con', '.board_view', '.view-content',
+      // 사이트별 발견 셀렉터
+      '.postBody',                    // 경기도 gnews
+      'td.p-table__content',          // 수원시 등 BD_board 계열
+      'td.fulltext',                  // BD_board 계열 변형
+      '.bbs_view_content',            // 일부 지자체
+      '.bbsV_cont',                   // 일부 지자체
+      '.news_content', '.news_view',  // 뉴스포털
+      '.bd_detail', '.board_cont',    // 게시판 변형
+      '#board_content',               // ID 기반
+      '.p-detail',                    // 파주 등
+      '.briefing_content',            // 경기도
+      '.post_content', '.post_body',  // 뉴스 사이트
+      // 범용 폴백
+      '#content', 'article',
     ];
 
     let content = '';
@@ -491,11 +506,34 @@ async function getArticleDetailWithPlaywright(browser, url) {
       }
     }
 
-    // 이미지 추출
+    // 셀렉터 실패 시: 페이지에서 가장 긴 텍스트 블록 추출
+    if (!content || content.length < 50) {
+      content = await page.evaluate(() => {
+        const candidates = [...document.querySelectorAll('div, td, section')].filter(el => {
+          const text = el.textContent.trim();
+          return text.length > 100 && text.length < 10000 && el.children.length < 30;
+        }).sort((a, b) => {
+          // 가장 구체적인(텍스트 길이 대비 HTML이 적은) 요소 선호
+          const ratioA = a.innerHTML.length / (a.textContent.trim().length || 1);
+          const ratioB = b.innerHTML.length / (b.textContent.trim().length || 1);
+          return ratioA - ratioB;
+        });
+        // 네비게이션/푸터 제외
+        const filtered = candidates.filter(el => {
+          const cls = (el.className || '').toString().toLowerCase();
+          return !cls.includes('nav') && !cls.includes('footer') && !cls.includes('header') && !cls.includes('menu') && !cls.includes('gnb');
+        });
+        return filtered.length > 0 ? filtered[0].innerHTML : '';
+      });
+    }
+
+    // 이미지 추출 - 확장된 셀렉터
     let imageUrl = null;
     const imgSelectors = [
       '.view_content img', '.board_view_content img', '.bbs_content img',
-      '.content_view img', '.article_content img', 'article img',
+      '.content_view img', '.article_content img', '.postBody img',
+      'td.p-table__content img', '.news_content img', '.post_content img',
+      '.detail_content img', '#content img', 'article img',
     ];
 
     for (const selector of imgSelectors) {
@@ -639,7 +677,7 @@ async function processArticle(article, source, browser = null) {
     if (html) {
       const $ = cheerio.load(html);
       let content = '';
-      const contentSelectors = ['.view_content', '.board_view_content', '.bbs_content', '.content_view', 'article'];
+      const contentSelectors = ['.view_content', '.board_view_content', '.bbs_content', '.content_view', '.postBody', 'td.p-table__content', 'td.fulltext', '.bbs_view_content', '.news_content', '.detail_content', '.post_content', '#board_content', '#content', 'article'];
       for (const sel of contentSelectors) {
         if ($(sel).length && $(sel).text().trim().length > 50) {
           content = $(sel).html();
