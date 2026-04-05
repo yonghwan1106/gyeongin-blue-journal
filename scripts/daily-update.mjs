@@ -89,8 +89,8 @@ const FETCH_SOURCES = [
   {
     name: '포천시',
     tag: '포천',
-    listUrl: 'https://www.pocheon.go.kr/www/selectBbsNttList.do?bbsNo=243&key=3044',
-    baseUrl: 'https://www.pocheon.go.kr',
+    listUrl: 'https://news.pocheon.go.kr/newshome/mtnmain.php?mtnkey=scatelist&mkey=35',
+    baseUrl: 'https://news.pocheon.go.kr',
     listSelector: 'table tbody tr',
     titleSelector: 'td a',
     dateSelector: 'td:nth-child(4)',
@@ -169,7 +169,7 @@ const PLAYWRIGHT_SOURCES = [
   {
     name: '평택시',
     tag: '평택',
-    listUrl: 'https://www.pyeongtaek.go.kr/pyeongtaek/bbs/list.do?ptIdx=90&mId=0403060000',
+    listUrl: 'https://www.pyeongtaek.go.kr/pyeongtaek/contents.do?mid=0402010000',
     baseUrl: 'https://www.pyeongtaek.go.kr',
   },
   {
@@ -181,7 +181,7 @@ const PLAYWRIGHT_SOURCES = [
   {
     name: '시흥시',
     tag: '시흥',
-    listUrl: 'https://www.siheung.go.kr/media/contents.do?mId=0100000000',
+    listUrl: 'https://www.siheung.go.kr/media/bbs/list.do?ptIdx=82&mId=0100000000',
     baseUrl: 'https://www.siheung.go.kr',
   },
   {
