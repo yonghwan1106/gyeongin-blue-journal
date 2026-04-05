@@ -91,6 +91,8 @@ const FETCH_SOURCES = [
 ];
 
 // ===== Playwright 방식 지자체 (JS 렌더링 필요) =====
+// listSelector: 기사 목록 행 셀렉터 (없으면 공통 셀렉터 사용)
+// titleSelector: 제목/링크 셀렉터 (없으면 'a' 사용)
 const PLAYWRIGHT_SOURCES = [
   // 특례시/대도시
   {
@@ -102,19 +104,19 @@ const PLAYWRIGHT_SOURCES = [
   {
     name: '용인시',
     tag: '용인',
-    listUrl: 'https://www.yongin.go.kr/news/press/list.do',
+    listUrl: 'https://www.yongin.go.kr/user/bbs/BD_selectBbsList.do?q_bbsCode=1020',
     baseUrl: 'https://www.yongin.go.kr',
   },
   {
     name: '고양시',
     tag: '고양',
-    listUrl: 'https://www.goyang.go.kr/www/www05/www0501/www050101.jsp',
+    listUrl: 'https://www.goyang.go.kr/news/user/bbs/BD_selectBbsList.do?q_bbsCode=1090',
     baseUrl: 'https://www.goyang.go.kr',
   },
   {
     name: '화성시',
     tag: '화성',
-    listUrl: 'https://www.hscity.go.kr/www/selectBbsNttList.do?bbsNo=96&key=2871',
+    listUrl: 'https://www.hscity.go.kr/www/user/bbs/BD_selectBbsList.do?q_bbsCode=1051',
     baseUrl: 'https://www.hscity.go.kr',
   },
   {
@@ -127,7 +129,7 @@ const PLAYWRIGHT_SOURCES = [
   {
     name: '안산시',
     tag: '안산',
-    listUrl: 'https://www.ansan.go.kr/www/selectBbsNttList.do?bbsNo=594&key=3032',
+    listUrl: 'https://www.ansan.go.kr/www/common/bbs/selectPageListBbs.do?bbs_code=B0238',
     baseUrl: 'https://www.ansan.go.kr',
   },
   {
@@ -139,85 +141,85 @@ const PLAYWRIGHT_SOURCES = [
   {
     name: '평택시',
     tag: '평택',
-    listUrl: 'https://www.pyeongtaek.go.kr/pyeongtaek/selectBbsNttList.do?bbsNo=8&key=1654',
+    listUrl: 'https://www.pyeongtaek.go.kr/pyeongtaek/bbs/list.do?ptIdx=90&mId=0403060000',
     baseUrl: 'https://www.pyeongtaek.go.kr',
   },
   {
     name: '의정부시',
     tag: '의정부',
-    listUrl: 'https://www.ui4u.go.kr/portal/bbs/list.do?ptIdx=49&mId=0301010000',
+    listUrl: 'https://www.ui4u.go.kr/portal/bbs/list.do?ptIdx=1709&mId=0301020000',
     baseUrl: 'https://www.ui4u.go.kr',
   },
   {
     name: '시흥시',
     tag: '시흥',
-    listUrl: 'https://www.siheung.go.kr/main/selectBbsNttList.do?bbsNo=117&key=649',
+    listUrl: 'https://www.siheung.go.kr/media/contents.do?mId=0100000000',
     baseUrl: 'https://www.siheung.go.kr',
   },
   {
     name: '파주시',
     tag: '파주',
-    listUrl: 'https://www.paju.go.kr/user/board/BD_board.list.do?bbsCd=1091&q_ctgCd=1001',
+    listUrl: 'https://www.paju.go.kr/news/user/board/BD_board.list.do?bbsCd=1022',
     baseUrl: 'https://www.paju.go.kr',
   },
   {
     name: '광명시',
     tag: '광명',
-    listUrl: 'https://www.gm.go.kr/pt/selectBbsNttList.do?bbsNo=91&key=1448',
-    baseUrl: 'https://www.gm.go.kr',
+    listUrl: 'https://news.gm.go.kr/bbs/list.html?table=bbs_12',
+    baseUrl: 'https://news.gm.go.kr',
   },
   {
     name: '김포시',
     tag: '김포',
-    listUrl: 'https://www.gimpo.go.kr/portal/selectBbsNttList.do?bbsNo=299&key=1499',
+    listUrl: 'https://www.gimpo.go.kr/news/selectBbsNttList.do?bbsNo=466&key=9377',
     baseUrl: 'https://www.gimpo.go.kr',
   },
   {
     name: '광주시',
     tag: '광주',
-    listUrl: 'https://www.gjcity.go.kr/portal/selectBbsNttList.do?bbsNo=88&key=1426',
+    listUrl: 'https://www.gjcity.go.kr/portal/contents.do?mId=0203010000',
     baseUrl: 'https://www.gjcity.go.kr',
   },
   {
     name: '이천시',
     tag: '이천',
-    listUrl: 'https://www.icheon.go.kr/portal/selectBbsNttList.do?bbsNo=65&key=1516',
+    listUrl: 'https://www.icheon.go.kr/news/board/post/list.do?bcIdx=785&mid=0301000000',
     baseUrl: 'https://www.icheon.go.kr',
   },
   {
     name: '양주시',
     tag: '양주',
-    listUrl: 'https://www.yangju.go.kr/www/selectBbsNttList.do?bbsNo=176&key=2082',
+    listUrl: 'https://www.yangju.go.kr/www/selectGnewsList.do?bscode=S017&key=207',
     baseUrl: 'https://www.yangju.go.kr',
   },
   {
     name: '오산시',
     tag: '오산',
-    listUrl: 'https://www.osan.go.kr/portal/contents.do?mId=0301080000',
-    baseUrl: 'https://www.osan.go.kr',
+    listUrl: 'https://news.osan.go.kr/main.do',
+    baseUrl: 'https://news.osan.go.kr',
   },
   {
     name: '구리시',
     tag: '구리',
-    listUrl: 'https://www.guri.go.kr/cms/selectBbsNttList.do?bbsNo=96&key=498',
+    listUrl: 'https://www.guri.go.kr/www/selectBbsNttList.do?bbsNo=42&key=393',
     baseUrl: 'https://www.guri.go.kr',
   },
   {
     name: '안성시',
     tag: '안성',
-    listUrl: 'https://www.anseong.go.kr/portal/contents.do?mId=0502010000',
+    listUrl: 'https://www.anseong.go.kr/portal/saeol/newsList.do?mId=0502010100',
     baseUrl: 'https://www.anseong.go.kr',
   },
   {
     name: '의왕시',
     tag: '의왕',
-    listUrl: 'https://www.uiwang.go.kr/portal/selectBbsNttList.do?bbsNo=24&key=1277',
+    listUrl: 'https://www.uiwang.go.kr/UWKORINFO0201',
     baseUrl: 'https://www.uiwang.go.kr',
   },
   {
     name: '하남시',
     tag: '하남',
-    listUrl: 'https://www.hanam.go.kr/www/selectBbsNttList.do?bbsNo=26&key=1428',
+    listUrl: 'https://www.hanam.go.kr/www/selectBbsNttList.do?bbsNo=1164&key=10221',
     baseUrl: 'https://www.hanam.go.kr',
   },
   {
@@ -229,21 +231,22 @@ const PLAYWRIGHT_SOURCES = [
   {
     name: '과천시',
     tag: '과천',
-    listUrl: 'https://www.gccity.go.kr/portal/selectBbsNttList.do?bbsNo=23&key=1248',
+    listUrl: 'https://www.gccity.go.kr/portal/newsList/list.do?mId=0301140000',
     baseUrl: 'https://www.gccity.go.kr',
   },
   // 군 지역
   {
     name: '가평군',
     tag: '가평',
-    listUrl: 'https://www.gp.go.kr/portal/selectBbsNttList.do?bbsNo=72&key=2139',
+    listUrl: 'https://www.gp.go.kr/portal/selectBbsNttList.do?bbsNo=127&key=787',
     baseUrl: 'https://www.gp.go.kr',
   },
   {
     name: '연천군',
     tag: '연천',
-    listUrl: 'https://www.yeoncheon.go.kr/portal/selectBbsNttList.do?bbsNo=107&key=1590',
+    listUrl: 'https://www.yeoncheon.go.kr/www/selectBbsNttList.do?bbsNo=29&key=3398',
     baseUrl: 'https://www.yeoncheon.go.kr',
+    listSelector: '.p-media-list > li',
   },
   // 광역시/도
   {
@@ -251,11 +254,13 @@ const PLAYWRIGHT_SOURCES = [
     tag: '인천',
     listUrl: 'https://www.incheon.go.kr/IC010205',
     baseUrl: 'https://www.incheon.go.kr',
+    listSelector: 'a[href*="/IC010205/view"]',
+    linkIsRow: true, // 셀렉터 자체가 링크 요소
   },
   {
     name: '경기도',
     tag: '경기',
-    listUrl: 'https://gnews.gg.go.kr/briefing/brief_gongbo_list.do',
+    listUrl: 'https://gnews.gg.go.kr/briefing/brief_gongbo.do',
     baseUrl: 'https://gnews.gg.go.kr',
   },
 ];
@@ -339,20 +344,75 @@ async function scrapeWithPlaywright(browser, source) {
     await page.goto(source.listUrl, { waitUntil: 'networkidle', timeout: 30000 });
     await page.waitForTimeout(2000);
 
-    // 공통 테이블 셀렉터들 시도
-    const selectors = [
-      'table tbody tr',
-      '.board_list tbody tr',
-      '.bbs_list tbody tr',
-      'ul.board_list li',
-      '.list_wrap li',
-      'article',
-    ];
+    // 사이트별 커스텀 셀렉터 우선, 없으면 공통 셀렉터 시도
+    const selectors = source.listSelector
+      ? [source.listSelector]
+      : [
+          // 테이블 기반
+          'table.board_list tbody tr',
+          'table.bbs_list tbody tr',
+          'table tbody tr',
+          // 리스트 기반
+          'ul.board_list > li',
+          'ul.bbs_list > li',
+          'ul.news_list > li',
+          '.list_wrap > li',
+          '.board_list > li',
+          // 카드/div 기반
+          '.news_list .item',
+          '.board_list .item',
+          '.bbs_default_list li',
+          'div.list_item',
+          'div.news_item',
+          '.card_list > div',
+          // 뉴스포털 공통
+          '.article_list li',
+          '.news_article',
+          '.briefing_list li',
+          // 범용 폴백
+          'article',
+          '.board-list tbody tr',
+          '[class*="list"] tbody tr',
+          '[class*="board"] li',
+          '[class*="news"] li',
+        ];
 
     let rows = [];
     for (const selector of selectors) {
       rows = await page.$$(selector);
-      if (rows.length > 0) break;
+      // 헤더 행이나 빈 행 제외: 최소 1개 이상의 링크가 있는 행만 카운트
+      if (rows.length > 0) {
+        const firstHasLink = await rows[0].$('a');
+        if (firstHasLink) break;
+        rows = [];
+      }
+    }
+
+    // 셀렉터로 못 찾으면 페이지 내 모든 링크에서 보도자료 패턴 추출 시도
+    if (rows.length === 0) {
+      const allLinks = await page.$$('a[href]');
+      for (const linkEl of allLinks.slice(0, 50)) {
+        try {
+          const href = await linkEl.getAttribute('href');
+          if (!href) continue;
+          // 게시판 상세 페이지 패턴 매칭
+          const isBoardLink = /(?:view|View|detail|read|nttView|selectBbs|bbscttSn|bbIdx|bIdx|idx=|nttNo|seq=|newsView|repSeq)/.test(href);
+          if (!isBoardLink) continue;
+
+          let title = await linkEl.textContent();
+          title = title?.trim().replace(/\s+/g, ' ');
+          if (!title || title.length < 5) continue;
+          // 네비게이션/메뉴 텍스트 제외
+          if (/^(이전|다음|처음|마지막|목록|닫기|더보기|로그인|회원가입)$/.test(title)) continue;
+
+          const link = href.startsWith('http') ? href : source.baseUrl + (href.startsWith('/') ? '' : '/') + href;
+          articles.push({ title: title.slice(0, 200), link });
+          if (articles.length >= 5) break;
+        } catch (e) {
+          continue;
+        }
+      }
+      return articles;
     }
 
     for (let i = 0; i < Math.min(rows.length, 5); i++) {
@@ -360,7 +420,12 @@ async function scrapeWithPlaywright(browser, source) {
         const row = rows[i];
 
         // 제목과 링크 추출
-        const linkEl = await row.$('a');
+        // linkIsRow: 셀렉터 자체가 <a> 요소인 경우 (예: 인천시)
+        const linkEl = source.linkIsRow
+          ? row
+          : (source.titleSelector
+              ? await row.$(source.titleSelector) || await row.$('a')
+              : await row.$('a'));
         if (!linkEl) continue;
 
         let title = await linkEl.textContent();
@@ -374,10 +439,16 @@ async function scrapeWithPlaywright(browser, source) {
         if (href && href !== '#' && !href.startsWith('javascript')) {
           link = href.startsWith('http') ? href : source.baseUrl + (href.startsWith('/') ? '' : '/') + href;
         } else if (onclick) {
-          // onclick에서 URL 추출 시도
-          const match = onclick.match(/['"]([^'"]*\.(do|jsp|html)[^'"]*)['"]/);
-          if (match) {
-            link = source.baseUrl + match[1];
+          // onclick에서 URL 추출 시도 (다양한 패턴)
+          const urlMatch = onclick.match(/['"]([^'"]*(?:\.do|\.jsp|\.html|view|detail)[^'"]*)['"]/);
+          const seqMatch = onclick.match(/(?:fn_detail|goView|jsView|fn_view|viewDetail)\s*\(\s*['"]?(\d+)['"]?/);
+          if (urlMatch) {
+            link = source.baseUrl + (urlMatch[1].startsWith('/') ? '' : '/') + urlMatch[1];
+          } else if (seqMatch) {
+            // 일반적인 게시판 상세 URL 패턴 생성
+            const listPath = new URL(source.listUrl).pathname;
+            const viewPath = listPath.replace(/list/i, 'view').replace(/List/i, 'View');
+            link = `${source.baseUrl}${viewPath}?nttNo=${seqMatch[1]}`;
           }
         }
 
@@ -642,9 +713,11 @@ async function main() {
     const articles = await parseFetchArticleList(listHtml, source);
     console.log(`  - ${articles.length}개 보도자료 발견`);
 
-    for (const article of articles.slice(0, 2)) {
+    let addedThisSource = 0;
+    for (const article of articles) {
+      if (addedThisSource >= 3) break; // 지자체당 최대 3개 신규 추가
       const result = await processArticle(article, source, null);
-      if (result.added) totalAdded++;
+      if (result.added) { totalAdded++; addedThisSource++; }
       if (result.hasImage) totalWithImage++;
       if (result.skipped) totalSkipped++;
       await new Promise(r => setTimeout(r, 500));
@@ -670,9 +743,11 @@ async function main() {
       const articles = await scrapeWithPlaywright(browser, source);
       console.log(`  - ${articles.length}개 보도자료 발견`);
 
-      for (const article of articles.slice(0, 2)) {
+      let addedThisSource = 0;
+      for (const article of articles) {
+        if (addedThisSource >= 3) break; // 지자체당 최대 3개 신규 추가
         const result = await processArticle(article, source, browser);
-        if (result.added) totalAdded++;
+        if (result.added) { totalAdded++; addedThisSource++; }
         if (result.hasImage) totalWithImage++;
         if (result.skipped) totalSkipped++;
         await new Promise(r => setTimeout(r, 500));
