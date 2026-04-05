@@ -28,7 +28,7 @@ export function getPb(): PocketBase {
 
 // 파일 URL 생성 헬퍼 함수
 export const getFileUrl = (collectionName: string, recordId: string, fileName: string) => {
-  if (!fileName) return '/placeholder.jpg'
+  if (!fileName) return '/placeholder.svg'
   // 클라이언트: 프록시를 통해 파일 접근
   if (typeof window !== 'undefined') {
     return `/pb/api/files/${collectionName}/${recordId}/${fileName}`

@@ -44,9 +44,17 @@ export default function HeadlineSlider() {
     return () => clearInterval(interval)
   }, [headlines.length, nextSlide])
 
+  const [imgSrc, setImgSrc] = useState('/placeholder.svg')
+
   const getImageUrl = (article: Article) => {
-    return getFileUrl('articles', article.id, article.thumbnail)
+    return article.thumbnail ? getFileUrl('articles', article.id, article.thumbnail) : '/placeholder.svg'
   }
+
+  useEffect(() => {
+    if (headlines.length > 0) {
+      setImgSrc(getImageUrl(headlines[currentIndex]))
+    }
+  }, [currentIndex, headlines])
 
   if (headlines.length === 0) {
     return (
@@ -67,11 +75,12 @@ export default function HeadlineSlider() {
 
       {/* Background Image */}
       <Image
-        src={getImageUrl(currentHeadline)}
+        src={imgSrc}
         alt={currentHeadline.title}
         fill
         className="object-cover"
         priority
+        onError={() => setImgSrc('/placeholder.svg')}
       />
       <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
 

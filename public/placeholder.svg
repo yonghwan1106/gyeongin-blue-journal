@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="500" viewBox="0 0 800 500">
+  <rect width="800" height="500" fill="#f1f5f9"/>
+  <g transform="translate(400,230)" text-anchor="middle">
+    <rect x="-40" y="-45" width="80" height="60" rx="8" fill="none" stroke="#94a3b8" stroke-width="3"/>
+    <circle cx="15" cy="-25" r="8" fill="#94a3b8"/>
+    <polygon points="-30,5 -5,-20 10,0 20,-10 30,5" fill="#94a3b8"/>
+  </g>
+  <text x="400" y="290" text-anchor="middle" font-family="sans-serif" font-size="16" fill="#94a3b8">경인블루저널</text>
+</svg>

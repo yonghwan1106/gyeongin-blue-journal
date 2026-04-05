@@ -1,3 +1,6 @@
+'use client'
+
+import { useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { Clock, Eye } from 'lucide-react'
@@ -6,15 +9,18 @@ import { ko } from 'date-fns/locale'
 import { getFileUrl } from '@/lib/pocketbase'
 import type { Article } from '@/types'
 
+const PLACEHOLDER = '/placeholder.svg'
+
 interface ArticleCardProps {
   article: Article
   variant?: 'default' | 'horizontal' | 'featured'
 }
 
 export default function ArticleCard({ article, variant = 'default' }: ArticleCardProps) {
-  const getImageUrl = () => {
-    return getFileUrl('articles', article.id, article.thumbnail)
-  }
+  const [imgSrc, setImgSrc] = useState(() =>
+    article.thumbnail ? getFileUrl('articles', article.id, article.thumbnail) : PLACEHOLDER
+  )
+  const handleImgError = () => setImgSrc(PLACEHOLDER)
 
   const categoryName = article.expand?.category?.name || '일반'
 
@@ -26,7 +32,8 @@ export default function ArticleCard({ article, variant = 'default' }: ArticleCar
       >
         <div className="relative w-32 h-24 shrink-0 rounded-lg overflow-hidden">
           <Image
-            src={getImageUrl()}
+            src={imgSrc}
+            onError={handleImgError}
             alt={article.title}
             fill
             className="object-cover group-hover:scale-105 transition-transform duration-300"
@@ -59,7 +66,8 @@ export default function ArticleCard({ article, variant = 'default' }: ArticleCar
         className="block group relative aspect-[16/9] rounded-xl overflow-hidden"
       >
         <Image
-          src={getImageUrl()}
+          src={imgSrc}
+            onError={handleImgError}
           alt={article.title}
           fill
           className="object-cover group-hover:scale-105 transition-transform duration-500"
@@ -93,7 +101,8 @@ export default function ArticleCard({ article, variant = 'default' }: ArticleCar
     >
       <div className="relative aspect-[16/10] overflow-hidden">
         <Image
-          src={getImageUrl()}
+          src={imgSrc}
+            onError={handleImgError}
           alt={article.title}
           fill
           className="object-cover group-hover:scale-105 transition-transform duration-300"
