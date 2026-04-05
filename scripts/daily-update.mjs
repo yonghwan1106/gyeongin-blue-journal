@@ -709,6 +709,49 @@ function categorize(text) {
   return CATEGORIES.society;
 }
 
+// HTML 콘텐츠 정제 - 불필요한 요소 제거
+function sanitizeContent(html) {
+  if (!html) return '';
+  return html
+    // script, style, noscript 태그 제거
+    .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
+    .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
+    .replace(/<noscript[^>]*>[\s\S]*?<\/noscript>/gi, '')
+    // nav, footer, header, aside 제거
+    .replace(/<nav[^>]*>[\s\S]*?<\/nav>/gi, '')
+    .replace(/<footer[^>]*>[\s\S]*?<\/footer>/gi, '')
+    .replace(/<header[^>]*>[\s\S]*?<\/header>/gi, '')
+    .replace(/<aside[^>]*>[\s\S]*?<\/aside>/gi, '')
+    // 인라인 JS 이벤트 및 var 선언 제거
+    .replace(/\bon\w+\s*=\s*"[^"]*"/gi, '')
+    .replace(/\bon\w+\s*=\s*'[^']*'/gi, '')
+    .replace(/<[^>]*var\s+\w+\s*=[\s\S]*?>/gi, '')
+    .replace(/var\s+\w+Props\s*=\s*\{[^}]*\}/g, '')
+    // 페이지네이션 패턴 제거
+    .replace(/<[^>]*class="[^"]*paginat[^"]*"[^>]*>[\s\S]*?<\/[^>]+>/gi, '')
+    // 연속 공백/줄바꿈 정리
+    .replace(/\n\s*\n\s*\n/g, '\n\n')
+    .trim();
+}
+
+// 제목 정제 - 날짜, 조회수, 부가 텍스트 제거
+function sanitizeTitle(title) {
+  if (!title) return '';
+  return title
+    // '새글' 태그 제거
+    .replace(/^새글\s*/g, '')
+    // 날짜 패턴 제거 (2026.04.03, 2026-04-03 등)
+    .replace(/\s*\d{4}[.\-/]\d{1,2}[.\-/]\d{1,2}\s*/g, ' ')
+    // 조회수 제거 (조회 : 123)
+    .replace(/\s*조회\s*:?\s*\d+\s*/g, '')
+    // 첨부파일 텍스트 제거
+    .replace(/첨부파일/g, '')
+    // 연속 공백 정리
+    .replace(/\s+/g, ' ')
+    .trim()
+    .slice(0, 100); // 100자 제한
+}
+
 function generateSlug() {
   return `news-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`;
 }
@@ -757,11 +800,14 @@ async function processArticle(article, source, browser = null) {
     }
   }
 
+  const cleanTitle = sanitizeTitle(article.title);
+  const cleanContent = sanitizeContent(detail?.content);
+
   const articleData = {
-    title: article.title.slice(0, 200),
+    title: cleanTitle,
     slug: generateSlug(),
-    summary: detail?.summary || article.title.slice(0, 100),
-    content: detail?.content || `<p>${article.title}</p><p><a href="${article.link}" target="_blank">원문 보기</a></p>`,
+    summary: detail?.summary?.replace(/\s+/g, ' ').trim().slice(0, 150) || cleanTitle.slice(0, 100),
+    content: cleanContent || `<p>${cleanTitle}</p><p><a href="${article.link}" target="_blank">원문 보기</a></p>`,
     category: categorize(article.title),
     status: 'published',
     is_headline: false,
