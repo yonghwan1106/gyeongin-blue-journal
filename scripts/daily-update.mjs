@@ -10,6 +10,34 @@ import { chromium } from 'playwright';
 
 const POCKETBASE_URL = 'http://158.247.210.200:8090';
 
+// 관리자 인증 토큰 (PATCH/파일 업로드에 필요)
+let AUTH_TOKEN = '';
+
+async function authenticateAdmin() {
+  const email = process.env.POCKETBASE_ADMIN_EMAIL;
+  const password = process.env.POCKETBASE_ADMIN_PASSWORD;
+  if (!email || !password) {
+    console.log('⚠️ 관리자 인증 정보 없음 (이미지 업로드 불가)');
+    return;
+  }
+  try {
+    const res = await fetch(`${POCKETBASE_URL}/api/collections/_superusers/auth-with-password`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ identity: email, password }),
+    });
+    if (res.ok) {
+      const data = await res.json();
+      AUTH_TOKEN = data.token;
+      console.log('✅ 관리자 인증 성공');
+    } else {
+      console.log(`⚠️ 관리자 인증 실패: ${res.status}`);
+    }
+  } catch (error) {
+    console.log(`⚠️ 인증 오류: ${error.message}`);
+  }
+}
+
 // 카테고리 ID
 const CATEGORIES = {
   politics: 'mq8899s58bf0699',
@@ -527,35 +555,56 @@ async function getArticleDetailWithPlaywright(browser, url) {
       });
     }
 
-    // 이미지 추출 - 확장된 셀렉터
+    // 이미지 추출 - OG 이미지 우선 (가장 안정적)
     let imageUrl = null;
-    const imgSelectors = [
-      '.view_content img', '.board_view_content img', '.bbs_content img',
-      '.content_view img', '.article_content img', '.postBody img',
-      'td.p-table__content img', '.news_content img', '.post_content img',
-      '.detail_content img', '#content img', 'article img',
-    ];
 
-    for (const selector of imgSelectors) {
-      const img = await page.$(selector);
-      if (img) {
-        const src = await img.getAttribute('src');
-        if (src && !src.includes('icon') && !src.includes('bullet') && !src.includes('btn') && !src.includes('logo')) {
+    // 1단계: OG/메타 이미지 (가장 신뢰성 높음)
+    const metaSelectors = [
+      'meta[property="og:image"]',
+      'meta[name="twitter:image"]',
+      'meta[name="thumbnail"]',
+    ];
+    for (const sel of metaSelectors) {
+      if (imageUrl) break;
+      const meta = await page.$(sel);
+      if (meta) {
+        const src = await meta.getAttribute('content');
+        if (src && src.length > 10) {
           imageUrl = src.startsWith('http') ? src : new URL(src, url).href;
-          break;
         }
       }
     }
 
-    // OG 이미지 폴백
+    // 2단계: 본문 내 이미지 (여러 개 순회)
     if (!imageUrl) {
-      const ogImage = await page.$('meta[property="og:image"]');
-      if (ogImage) {
-        imageUrl = await ogImage.getAttribute('content');
-        if (imageUrl && !imageUrl.startsWith('http')) {
-          imageUrl = new URL(imageUrl, url).href;
+      imageUrl = await page.evaluate((pageUrl) => {
+        const contentAreas = [
+          '.postBody', 'td.p-table__content', 'td.fulltext',
+          '.view_content', '.board_view_content', '.bbs_content',
+          '.content_view', '.article_content', '.detail_content',
+          '.news_content', '.post_content', '.bbs_view_content',
+          '#board_content', '#content', 'article',
+        ];
+
+        for (const sel of contentAreas) {
+          const area = document.querySelector(sel);
+          if (!area) continue;
+          const imgs = area.querySelectorAll('img');
+          for (const img of imgs) {
+            const src = img.getAttribute('src') || img.getAttribute('data-src') || '';
+            if (!src || src.length < 5) continue;
+            // 파일명만 추출하여 필터링 (경로 전체가 아닌)
+            const fileName = src.split('/').pop().split('?')[0].toLowerCase();
+            if (/^(icon|bullet|btn|logo|arrow|bg|spacer|blank|dot)/.test(fileName)) continue;
+            if (/\.(gif|svg)$/i.test(fileName)) continue; // GIF/SVG 제외
+            // 너비 체크 (가능한 경우)
+            const w = img.naturalWidth || img.width || parseInt(img.getAttribute('width')) || 0;
+            if (w > 0 && w < 50) continue; // 50px 미만 제외
+            return src.startsWith('http') ? src : new URL(src, pageUrl).href;
+          }
         }
-      }
+        return null;
+      }, url);
     }
 
     // 요약 추출
@@ -606,7 +655,7 @@ async function uploadImage(recordId, imageUrl) {
     const imageResponse = await fetch(imageUrl, {
       headers: {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-        'Referer': imageUrl,
+        'Referer': new URL(imageUrl).origin,
       },
       signal: controller.signal,
     });
@@ -616,7 +665,7 @@ async function uploadImage(recordId, imageUrl) {
     if (!imageResponse.ok) return false;
 
     const imageBuffer = await imageResponse.arrayBuffer();
-    if (imageBuffer.byteLength < 5000) return false;
+    if (imageBuffer.byteLength < 1000) return false; // 1KB 최소
 
     const contentType = imageResponse.headers.get('content-type') || 'image/jpeg';
     const ext = contentType.includes('png') ? 'png' : 'jpg';
@@ -625,9 +674,10 @@ async function uploadImage(recordId, imageUrl) {
     const formData = new FormData();
     formData.append('thumbnail', new Blob([imageBuffer], { type: contentType }), fileName);
 
+    const headers = AUTH_TOKEN ? { 'Authorization': AUTH_TOKEN } : {};
     const uploadResponse = await fetch(
       `${POCKETBASE_URL}/api/collections/articles/records/${recordId}`,
-      { method: 'PATCH', body: formData }
+      { method: 'PATCH', body: formData, headers }
     );
 
     return uploadResponse.ok;
@@ -685,12 +735,23 @@ async function processArticle(article, source, browser = null) {
         }
       }
       let imageUrl = null;
-      const img = $('article img, .view_content img, .board_view_content img').first();
-      if (img.length) {
-        const src = img.attr('src');
-        if (src && !src.includes('icon') && !src.includes('logo')) {
+      // OG 이미지 우선
+      const ogImg = $('meta[property="og:image"]').attr('content') || $('meta[name="twitter:image"]').attr('content');
+      if (ogImg && ogImg.length > 10) {
+        imageUrl = ogImg.startsWith('http') ? ogImg : new URL(ogImg, article.link).href;
+      }
+      // 본문 이미지 순회
+      if (!imageUrl) {
+        const imgAreas = '.postBody img, td.p-table__content img, .view_content img, .board_view_content img, .bbs_content img, .content_view img, .news_content img, .detail_content img, #content img, article img';
+        $(imgAreas).each((_, el) => {
+          if (imageUrl) return false; // break
+          const src = $(el).attr('src') || $(el).attr('data-src') || '';
+          if (!src || src.length < 5) return;
+          const fileName = src.split('/').pop().split('?')[0].toLowerCase();
+          if (/^(icon|bullet|btn|logo|arrow|bg|spacer|blank|dot)/.test(fileName)) return;
+          if (/\.(gif|svg)$/i.test(fileName)) return;
           imageUrl = src.startsWith('http') ? src : new URL(src, article.link).href;
-        }
+        });
       }
       detail = { content, summary: content?.replace(/<[^>]*>/g, '').slice(0, 150) || '', imageUrl };
     }
@@ -730,6 +791,10 @@ async function main() {
   console.log('===== 경인블루저널 일일 업데이트 (하이브리드 방식) =====');
   console.log(`실행 시간: ${new Date().toLocaleString('ko-KR', { timeZone: 'Asia/Seoul' })}`);
   console.log(`Fetch 방식: ${FETCH_SOURCES.length}개 / Playwright 방식: ${PLAYWRIGHT_SOURCES.length}개`);
+  console.log('');
+
+  // 관리자 인증 (이미지 업로드에 필요)
+  await authenticateAdmin();
   console.log('');
 
   let totalAdded = 0;
